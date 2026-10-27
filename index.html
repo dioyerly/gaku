@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaku · tu estudio en orden</title>
+<meta name="description" content="Gaku organiza horarios, tareas, exámenes y apuntes de estudiantes y familias. Elegí un archivo de pago único o la versión sincronizada por suscripción.">
+<meta name="theme-color" content="#f4f7f8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f6b7d'/%3E%3Ctext x='16' y='23' font-size='20' font-weight='700' text-anchor='middle' fill='white' font-family='Georgia,serif'%3EG%3C/text%3E%3C/svg%3E">
+<link rel="preload" as="image" href="assets/img/pc-hoy.webp">
+<style>
+@font-face{font-family:Fraunces;font-weight:100 900;font-display:swap;src:url(assets/fonts/fraunces-latin-wght-normal.woff2) format('woff2')}
+@font-face{font-family:Figtree;font-weight:300 900;font-display:swap;src:url(assets/fonts/figtree-latin-wght-normal.woff2) format('woff2')}
+:root{--bg:#f4f7f8;--surf:#fff;--surf2:#eaf0f2;--ink:#14232b;--mut:#55676f;--line:#d3dfe3;--ac:#0f6b7d;--ac-ink:#fff;--soft:#d8edf1;--ac2:#3f8f6b;--ok:#276f4d;--bad:#b0372b;--sh:0 1px 2px rgba(20,35,43,.06),0 24px 60px -28px rgba(20,35,43,.35)}
+@media(prefers-color-scheme:dark){:root{--bg:#0e171c;--surf:#15232a;--surf2:#1c2d36;--ink:#e8f1f4;--mut:#9db1ba;--line:#29414c;--ac:#5cc0d2;--ac-ink:#06222a;--soft:#17353d;--ac2:#6cc79a;--ok:#7fd3a8;--bad:#ff9486;--sh:0 1px 2px rgba(0,0,0,.3),0 24px 60px -28px rgba(0,0,0,.7)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Figtree,system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;line-height:1.1;margin:0;letter-spacing:-.015em;text-wrap:balance}
+a{color:var(--ac)}img{max-width:100%;display:block}
+.w{max-width:1160px;margin:0 auto;padding:0 22px}
+section{padding:96px 0;position:relative}
+.eyebrow{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ac);margin:0 0 14px}
+h2{font-size:clamp(1.9rem,4.4vw,3rem);margin-bottom:16px}
+.lead{color:var(--mut);max-width:58ch;margin:0 0 34px;font-size:1.08rem}
+#prog{position:fixed;left:0;top:0;height:3px;width:0;background:var(--ac);z-index:50}
+/* barra */
+.bar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.bar .w{display:flex;align-items:center;gap:18px;height:64px}
+.brand{font:700 1.7rem Fraunces,serif;text-decoration:none;color:var(--ac);letter-spacing:.01em}
+.bar nav{margin-left:auto;display:flex;gap:4px;align-items:center}
+.bar nav a{padding:8px 13px;text-decoration:none;color:var(--mut);font-weight:600;font-size:.95rem;border-radius:10px}
+.bar nav a:hover{color:var(--ink);background:var(--surf2)}
+@media(max-width:760px){.bar nav a.h{display:none}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 26px;border-radius:12px;font:700 1rem Figtree,sans-serif;text-decoration:none;border:2px solid var(--ac);color:var(--ac);background:transparent;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.p{background:var(--ac);color:var(--ac-ink);box-shadow:0 12px 26px -14px var(--ac)}
+.btn.s{padding:9px 16px;font-size:.92rem}
+/* hero */
+.hero{padding:70px 0 40px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-20% -10% auto -10%;height:90%;background:radial-gradient(60% 60% at 75% 20%,color-mix(in srgb,var(--ac) 18%,transparent),transparent 70%),radial-gradient(40% 50% at 10% 60%,color-mix(in srgb,var(--ac2) 14%,transparent),transparent 70%);pointer-events:none}
+.hero .w{position:relative}
+.hero .top{max-width:780px}
+.hero h1{font-size:clamp(2.7rem,7vw,5rem)}
+.hero h1 span{color:var(--ac)}
+.hero p.l{font-size:1.25rem;color:var(--mut);max-width:36ch;margin:22px 0 30px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.hint{font-size:.88rem;color:var(--mut);margin-top:16px}
+.stage{position:relative;margin:56px auto 0;max-width:1080px}
+.lap{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surf);box-shadow:var(--sh)}
+.lap .dots{display:flex;gap:7px;padding:11px 14px;background:var(--surf2);border-bottom:1px solid var(--line)}
+.lap .dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.lap img{width:100%;height:auto}
+.ph{width:clamp(130px,22%,230px);position:absolute;right:-1%;bottom:-8%;border:6px solid var(--ink);border-radius:26px;overflow:hidden;background:var(--ink);box-shadow:var(--sh);transition:transform .2s}
+.ph img{width:100%;height:auto}
+/* tira */
+.strip{border-block:1px solid var(--line);background:var(--surf);padding:22px 0;overflow:hidden;white-space:nowrap}
+.strip div{display:inline-block;animation:mq 38s linear infinite;font:600 1.5rem Fraunces,serif;color:var(--mut)}
+.strip b{color:var(--ac);margin:0 22px;font-weight:600}
+@keyframes mq{to{transform:translateX(-50%)}}
+/* historia pegajosa */
+.story{display:grid;grid-template-columns:1fr 420px;gap:60px}
+.story .steps{padding:10vh 0 20vh}
+.st{min-height:62vh;display:flex;flex-direction:column;justify-content:center;opacity:.35;transition:opacity .4s}
+.st.on{opacity:1}
+.st .n{font:700 .85rem ui-monospace,monospace;color:var(--ac);letter-spacing:.12em}
+.st h3{font-size:clamp(1.7rem,3.4vw,2.5rem);margin:10px 0 12px}
+.st p{color:var(--mut);max-width:40ch;margin:0}
+.sticky{position:sticky;top:96px;height:calc(100vh - 120px);display:grid;place-items:center}
+.sp{position:relative;width:min(300px,100%);aspect-ratio:390/800;border:8px solid var(--ink);border-radius:36px;overflow:hidden;background:var(--ink);box-shadow:var(--sh)}
+.sp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.03);transition:opacity .5s,transform .5s}
+.sp img.on{opacity:1;transform:none}
+.st .im{display:none}
+@media(max-width:900px){.story{grid-template-columns:1fr}.sticky{display:none}.st{min-height:0;opacity:1;padding:30px 0}.st .im{display:block;width:min(260px,70%);margin:22px 0 0;border:7px solid var(--ink);border-radius:30px;box-shadow:var(--sh)}.story .steps{padding:0}}
+/* filas de funciones */
+.row{display:grid;grid-template-columns:.85fr 1.15fr;gap:56px;align-items:center;padding:42px 0}
+.row.rev{grid-template-columns:1.15fr .85fr}.row.rev .tx{order:2}
+@media(max-width:900px){.row,.row.rev{grid-template-columns:1fr;gap:26px}.row.rev .tx{order:0}}
+.row h3{font-size:clamp(1.6rem,3vw,2.3rem);margin-bottom:12px}
+.row p{color:var(--mut);margin:0 0 14px}
+.row ul{list-style:none;padding:0;margin:0}.row li{padding:5px 0 5px 28px;position:relative;font-size:.98rem}
+.row li::before{content:"✓";position:absolute;left:0;color:var(--ac2);font-weight:800}
+.shot{border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--sh);background:var(--surf);transition:transform .4s}
+.shot:hover{transform:translateY(-4px)}
+.shot .dots{display:flex;gap:6px;padding:9px 12px;background:var(--surf2);border-bottom:1px solid var(--line)}.shot .dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.shot img{width:100%;height:auto}
+/* claro/oscuro */
+.mode{background:var(--surf2)}
+.mode .tog{display:inline-flex;border:1px solid var(--line);border-radius:99px;padding:4px;background:var(--surf);margin-bottom:26px}
+.mode .tog button{border:0;background:none;padding:9px 20px;border-radius:99px;font:600 .95rem Figtree;color:var(--mut);cursor:pointer}
+.mode .tog button.on{background:var(--ac);color:var(--ac-ink)}
+.mode .frame{position:relative;max-width:980px;margin:0 auto}
+.mode .frame img{border-radius:14px;border:1px solid var(--line);box-shadow:var(--sh);transition:opacity .4s}
+.mode .frame img.b{position:absolute;inset:0;opacity:0}
+.mode .frame.dk img.b{opacity:1}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.chips span{padding:8px 16px;border-radius:99px;background:var(--surf);border:1px solid var(--line);font-weight:600;font-size:.92rem}
+/* demo */
+.demo .lap2{border:10px solid var(--ink);border-bottom-width:16px;border-radius:16px 16px 6px 6px;background:var(--ink);box-shadow:var(--sh)}
+.demo .vp{aspect-ratio:16/10;overflow:hidden;background:var(--bg);position:relative}
+.demo .lap2 iframe{position:absolute;left:0;top:0;width:1200px;height:750px;border:0;transform-origin:0 0}
+.dgrid{display:grid;grid-template-columns:1.5fr .7fr;gap:30px;align-items:end}
+@media(max-width:900px){.dgrid{grid-template-columns:1fr;gap:34px}}
+.phd{width:min(300px,78vw);margin:0 auto;border:10px solid var(--ink);border-radius:38px;background:var(--ink);box-shadow:var(--sh)}
+.phd .vp{aspect-ratio:9/18.5;border-radius:28px}
+.phd iframe{position:absolute;left:0;top:0;width:390px;height:802px;border:0;transform-origin:0 0}
+.cap{text-align:center;color:var(--mut);font-size:.88rem;margin-top:12px}
+.dnote{display:flex;gap:14px;align-items:center;margin-top:28px;font-size:.95rem;color:var(--mut);flex-wrap:wrap}
+/* precios */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:stretch}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+.plan{background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:32px 30px;display:flex;flex-direction:column;position:relative}
+.plan.hot{border:2px solid var(--ac);box-shadow:var(--sh)}
+.plan .ribbon{position:absolute;top:-14px;right:24px;background:var(--ac);color:var(--ac-ink);font-weight:700;font-size:.78rem;letter-spacing:.06em;padding:5px 14px;border-radius:99px}
+.plan h3{font-size:1.55rem}.plan .sub{color:var(--mut);margin:6px 0 18px;font-size:.98rem}
+.price{font:700 3.2rem/1 Fraunces,serif;letter-spacing:-.03em}.price small{font:600 1rem Figtree,sans-serif;color:var(--mut);letter-spacing:0}
+.was{color:var(--mut);font-size:.95rem;margin:4px 0 0}.was s{color:var(--bad)}
+.plan ul{list-style:none;padding:0;margin:18px 0 0}.plan li{padding:7px 0 7px 30px;position:relative;font-size:.97rem}
+.plan li.y::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:800}
+.plan li.x::before{content:"–";position:absolute;left:4px;color:var(--bad);font-weight:800}
+.plan h4{margin:22px 0 0;font:700 .76rem Figtree;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.plan .go{margin-top:auto;padding-top:26px}.plan .go .btn{width:100%}
+.plan .fine{font-size:.82rem;color:var(--mut);margin:10px 0 0;text-align:center}
+.who{margin-top:30px;padding:24px 28px;border:1px dashed var(--ac);border-radius:16px;display:grid;grid-template-columns:1fr 1fr;gap:22px;background:var(--soft)}
+@media(max-width:700px){.who{grid-template-columns:1fr}}
+.who b{display:block;margin-bottom:4px}.who p{margin:0;color:var(--mut);font-size:.96rem}
+/* pasos / faq / final */
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:s}
+@media(max-width:800px){.steps3{grid-template-columns:1fr}}
+.steps3 div{counter-increment:s;padding:24px;border-radius:16px;background:var(--surf);border:1px solid var(--line)}
+.steps3 div::before{content:counter(s);display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--ac);color:var(--ac-ink);font-weight:700;margin-bottom:14px}
+.steps3 h3{font-size:1.15rem;margin-bottom:6px}.steps3 p{margin:0;color:var(--mut);font-size:.96rem}
+details{border-bottom:1px solid var(--line);padding:18px 0}summary{cursor:pointer;font:600 1.1rem Fraunces,serif;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";color:var(--ac);font-size:1.4rem;line-height:1}details[open] summary::after{content:"–"}
+details p{margin:12px 0 0;color:var(--mut);max-width:70ch}
+.end{background:var(--ac);color:var(--ac-ink);border-radius:28px;padding:64px 30px;text-align:center;position:relative;overflow:hidden}
+.end::after{content:"";position:absolute;inset:auto -10% -60% -10%;height:100%;background:radial-gradient(50% 50% at 50% 0,rgba(255,255,255,.18),transparent 70%)}
+.end h2,.end p{position:relative;z-index:1}.end p{max-width:48ch;margin:0 auto 28px;opacity:.92}
+.end .cta{justify-content:center;position:relative;z-index:1}
+.end .btn{border-color:var(--ac-ink);color:var(--ac-ink)}.end .btn.p{background:var(--ac-ink);color:var(--ac)}
+footer{padding:34px 0 60px;color:var(--mut);font-size:.9rem}footer .w{display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between}
+.wa{position:fixed;right:16px;bottom:16px;z-index:45;background:#1f8f4e;color:#fff;border-radius:99px;padding:12px 18px;font-weight:700;text-decoration:none;box-shadow:0 10px 24px -10px rgba(0,0,0,.5)}
+.rv{opacity:0;transform:translateY(26px);transition:opacity .7s,transform .7s}.rv.in{opacity:1;transform:none}
+:focus-visible{outline:3px solid var(--ac);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}.rv{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<div class="bar"><div class="w">
+  <a class="brand" href="#top">Gaku</a>
+  <nav><a class="h" href="#dia">Un día con Gaku</a><a class="h" href="#demo">Probala</a><a class="h" href="#precio">Dos formas</a><a class="h" href="#faq">Preguntas</a><a href="app.php" class="btn s">Ya tengo cuenta</a></nav>
+</div></div>
+
+<header class="hero" id="top"><div class="w">
+  <div class="top">
+    <p class="eyebrow">Para estudiantes y familias</p>
+    <h1>El año de estudio, <span>sin perder el hilo.</span></h1>
+    <p class="l">Horarios, tareas, exámenes, apuntes y qué llevar mañana. Todo en un solo lugar, claro y tranquilo.</p>
+    <div class="cta"><a class="btn p" href="#precio">Ver las dos formas de tenerlo</a><a class="btn" href="#demo">Probar la demo</a></div>
+    <p class="hint">La demo no pide registro · datos de ejemplo · se abre en esta misma página</p>
+  </div>
+  <div class="stage rv">
+    <div class="lap"><div class="dots"><i></i><i></i><i></i></div><img src="assets/img/pc-hoy.webp" width="1280" height="800" alt="Pantalla Hoy de Gaku en computadora: clases, entregas y plan de estudio del día"></div>
+    <div class="ph" id="heroph"><img src="assets/img/ph-hoy.webp" width="780" height="1600" alt="Pantalla Hoy de Gaku en celular"></div>
+  </div>
+</div></header>
+
+<div class="strip" aria-hidden="true"><div>
+  <b>·</b>Horarios<b>·</b>Tareas<b>·</b>Exámenes<b>·</b>Apuntes<b>·</b>Qué llevar<b>·</b>Notas y promedios<b>·</b>Plan de estudio<b>·</b>Calendario<b>·</b>Varios estudiantes
+  <b>·</b>Horarios<b>·</b>Tareas<b>·</b>Exámenes<b>·</b>Apuntes<b>·</b>Qué llevar<b>·</b>Notas y promedios<b>·</b>Plan de estudio<b>·</b>Calendario<b>·</b>Varios estudiantes
+</div></div>
+
+<section id="dia"><div class="w">
+  <p class="eyebrow">Un día con Gaku</p><h2>Cada momento del día, resuelto.</h2>
+  <p class="lead">Seguí el recorrido: mientras bajás, la pantalla cambia.</p>
+  <div class="story">
+    <div class="steps">
+      <div class="st on" data-i="0"><span class="n">07:30 · MAÑANA</span><h3>Abrís Hoy y sabés qué toca.</h3><p>Clases con aula y horario, entregas que vencen y lo próximo más importante, en una sola vista.</p><img class="im" src="assets/img/ph-hoy.webp" alt="Pantalla Hoy" loading="lazy" width="780" height="1600"></div>
+      <div class="st" data-i="1"><span class="n">13:00 · MOCHILA</span><h3>Nadie olvida la ropa de gimnasia.</h3><p>Cada material pasa de “hay que conseguirlo” a “en la mochila”. Lo de mañana se prepara hoy.</p><img class="im" src="assets/img/ph-materiales.webp" alt="Pantalla Qué llevar" loading="lazy" width="780" height="1600"></div>
+      <div class="st" data-i="2"><span class="n">17:00 · TARDE</span><h3>La semana, de un vistazo.</h3><p>Una agenda con clases, entregas y exámenes. Semanas alternadas y cambios de aula incluidos.</p><img class="im" src="assets/img/ph-agenda.webp" alt="Pantalla Agenda" loading="lazy" width="780" height="1600"></div>
+      <div class="st" data-i="3"><span class="n">20:00 · EXÁMENES</span><h3>Sabés cómo venís con cada nota.</h3><p>Promedios explicados, recuperatorios que reemplazan o promedian, y cuánto falta para aprobar.</p><img class="im" src="assets/img/ph-notas.webp" alt="Pantalla Notas" loading="lazy" width="780" height="1600"></div>
+    </div>
+    <div class="sticky"><div class="sp">
+      <img class="on" data-i="0" src="assets/img/ph-hoy.webp" alt="" loading="lazy">
+      <img data-i="1" src="assets/img/ph-materiales.webp" alt="" loading="lazy">
+      <img data-i="2" src="assets/img/ph-agenda.webp" alt="" loading="lazy">
+      <img data-i="3" src="assets/img/ph-notas.webp" alt="" loading="lazy">
+    </div></div>
+  </div>
+</div></section>
+
+<section style="padding-top:20px"><div class="w">
+  <p class="eyebrow">Todo lo que incluye</p><h2>Pensado para estudiar de verdad.</h2>
+  <div class="row rv"><div class="tx"><h3>Agenda y horarios</h3><p>Todas las clases, entregas y exámenes en el mismo calendario.</p><ul><li>Semanas alternadas y cambios de aula</li><li>Vista de hoy, semana y mes</li><li>Cada materia con su color</li></ul></div>
+    <div class="shot"><div class="dots"><i></i><i></i><i></i></div><img src="assets/img/pc-agenda.webp" loading="lazy" width="1280" height="800" alt="Agenda de Gaku"></div></div>
+  <div class="row rev rv"><div class="tx"><h3>Plan de estudio por sesiones</h3><p>Gaku reparte los temas de cada examen en tus horarios libres y nunca programa nada después de la fecha.</p><ul><li>Temas con dificultad y avance</li><li>Sesiones con pausa y modo enfoque</li><li>Todo se puede mover o borrar</li></ul></div>
+    <div class="shot"><div class="dots"><i></i><i></i><i></i></div><img src="assets/img/pc-estudio.webp" loading="lazy" width="1280" height="800" alt="Plan de estudio de Gaku"></div></div>
+  <div class="row rv"><div class="tx"><h3>Apuntes y tarjetas de repaso</h3><p>Escribí, etiquetá y buscá en todo. Convertí preguntas en tarjetas para practicar.</p><ul><li>Apuntes por materia y por examen</li><li>Buscador en todo el contenido</li><li>Preguntas de repaso y favoritos</li></ul></div>
+    <div class="shot"><div class="dots"><i></i><i></i><i></i></div><img src="assets/img/pc-apuntes.webp" loading="lazy" width="1280" height="800" alt="Apuntes de Gaku"></div></div>
+  <div class="row rev rv"><div class="tx"><h3>Notas y promedios explicados</h3><p>No solo el número: ves cómo se calcula y qué necesitás en lo que falta.</p><ul><li>Escala de notas configurable</li><li>Recuperatorios que reemplazan, promedian o toman la mayor</li><li>Varios estudiantes, cada uno con lo suyo</li></ul></div>
+    <div class="shot"><div class="dots"><i></i><i></i><i></i></div><img src="assets/img/pc-notas.webp" loading="lazy" width="1280" height="800" alt="Notas y promedios de Gaku"></div></div>
+</div></section>
+
+<section class="mode"><div class="w" style="text-align:center">
+  <p class="eyebrow">A tu manera</p><h2>Claro u oscuro, grande o chico.</h2>
+  <p class="lead" style="margin-inline:auto">Colores suaves, texto ajustable y todo usable con teclado. Elegís cómo se ve.</p>
+  <div class="tog" role="group" aria-label="Tema"><button class="on" data-m="l">Claro</button><button data-m="d">Oscuro</button></div>
+  <div class="frame" id="mf"><img src="assets/img/pc-hoy.webp" alt="Gaku en modo claro" loading="lazy" width="1280" height="800"><img class="b" src="assets/img/pc-hoy-dark.webp" alt="Gaku en modo oscuro" loading="lazy" width="1280" height="800"></div>
+  <div class="chips" style="justify-content:center"><span>Dos paletas de color</span><span>Cuatro tamaños de texto</span><span>Formato 12 o 24 horas</span><span>Funciona en celular, tablet y compu</span></div>
+</div></section>
+
+<section class="demo" id="demo"><div class="w">
+  <p class="eyebrow">Probala ahora</p><h2>Es una demo real: tocá todo.</h2>
+  <p class="lead">A la izquierda, una estudiante universitaria en la computadora. A la derecha, una familia con dos hijos en el celular. Los datos son inventados y no se guarda nada.</p>
+  <div class="dgrid">
+    <div><div class="lap2"><div class="vp" id="lapvp"><iframe id="lapf" data-src="demo.html?auto=1&embed=1&k=adult" title="Demo de Gaku en computadora"></iframe></div></div><p class="cap">Estudiante adulta · agenda, parciales, plan de estudio</p></div>
+    <div><div class="phd"><div class="vp" id="phvp"><iframe id="phf" data-src="demo.html?auto=1&embed=1&k=family" title="Demo de Gaku en celular"></iframe></div></div><p class="cap">Familia · responsable y estudiante</p></div>
+  </div>
+  <div class="dnote"><a class="btn p" href="demo.html" target="_blank" rel="noopener" data-t="click_demo">Abrir la demo en pantalla completa</a><span>Elegís entre estudiante adulta y familia.</span></div>
+</div></section>
+
+<section id="precio"><div class="w">
+  <p class="eyebrow">Dos formas de tener Gaku</p><h2>Elegí cómo guardar tus datos.</h2>
+  <p class="lead">Es la misma app en las dos. Lo que cambia es dónde viven tus datos y si se ven en varios aparatos.</p>
+  <div class="two">
+    <article class="plan rv">
+      <h3>Un solo archivo</h3><p class="sub">Lo comprás una vez y es tuyo. Funciona en tu aparato.</p>
+      <div class="price">$12.500 <small>pago único</small></div><p class="was">Sin mensualidades, nunca.</p>
+      <h4>Lo bueno</h4>
+      <ul>
+        <li class="y">Pagás una sola vez y listo.</li>
+        <li class="y">Tus datos quedan en tu aparato, no en internet.</li>
+        <li class="y">Funciona sin conexión; solo pide internet de vez en cuando para renovar el permiso.</li>
+        <li class="y">Se abre con tu clave y tu contraseña.</li>
+        <li class="y">Podés usarlo en hasta 3 dispositivos.</li>
+        <li class="y">Si querés sincronizar más adelante, pasás a la suscripción con tus datos.</li>
+      </ul>
+      <h4>Lo que tenés que saber</h4>
+      <ul>
+        <li class="x">Cada aparato guarda lo suyo: no se sincronizan entre sí.</li>
+        <li class="x">Si borrás los datos del navegador o movés el archivo, se pierden: hay que hacer copias (la app te lo recuerda).</li>
+        <li class="x">Sin avisos por correo, sin adjuntos y sin dar acceso a otra persona.</li>
+        <li class="x">En iPhone abrir un archivo suelto es incómodo: ahí conviene la suscripción.</li>
+      </ul>
+      <div class="go"><a class="btn" href="comprar.php" data-t="click_buy" data-d="plan">Comprar el archivo · $12.500</a><p class="fine">Pagás con Mercado Pago. Te llega la clave y la descarga al instante.</p></div>
+    </article>
+    <article class="plan hot rv">
+      <span class="ribbon">PRECIO DE LANZAMIENTO</span>
+      <h3>Versión sincronizada</h3><p class="sub">Tu cuenta en internet: lo que cargás en un aparato aparece en los demás.</p>
+      <div class="price">$6.990 <small>por mes</small></div><p class="was">Precio normal <s>$25.000</s> por mes. Cancelás cuando quieras.</p>
+      <h4>Lo bueno</h4>
+      <ul>
+        <li class="y">Celular, tablet y computadora siempre al día.</li>
+        <li class="y">Tus datos respaldados en el servidor.</li>
+        <li class="y">Invitá a tu familia: cada estudiante con su acceso.</li>
+        <li class="y">Avisos por correo de tareas, exámenes y materiales.</li>
+        <li class="y">Adjuntos en los apuntes y mejoras incluidas.</li>
+        <li class="y">Si dejás de pagar no perdés nada: podés ver y descargar tus datos.</li>
+      </ul>
+      <h4>Lo que tenés que saber</h4>
+      <ul>
+        <li class="x">Es un pago mensual mientras la uses.</li>
+        <li class="x">Necesita internet para sincronizar (guarda los cambios cuando vuelve la conexión).</li>
+      </ul>
+      <div class="go"><a class="btn p" href="suscribir.php" data-t="click_sub" data-d="plan">Suscribirme · $6.990 por mes</a><p class="fine">Pagás con Mercado Pago. Después creás tu usuario y tu clave.</p></div>
+    </article>
+  </div>
+  <div class="who rv"><div><b>Elegí el archivo si…</b><p>usás siempre el mismo aparato (una computadora o una tablet), preferís pagar una vez y no necesitás compartirlo.</p></div><div><b>Elegí la suscripción si…</b><p>querés ver todo en el celular y la compu, compartirlo con tu familia o recibir avisos.</p></div></div>
+</div></section>
+
+<section style="padding-top:0"><div class="w">
+  <p class="eyebrow">Así de simple</p><h2>De la compra a usarlo, en minutos.</h2>
+  <div class="steps3">
+    <div class="rv"><h3>Elegís cómo tenerlo</h3><p>Archivo de pago único o suscripción. Pagás con Mercado Pago.</p></div>
+    <div class="rv"><h3>Recibís tu acceso</h3><p>Archivo: una clave y el link de descarga. Suscripción: creás tu usuario y tu clave.</p></div>
+    <div class="rv"><h3>Cargás tu año</h3><p>Una configuración guiada de 5 pasos y ya estás organizado.</p></div>
+  </div>
+</div></section>
+
+<section id="faq" style="padding-top:0"><div class="w">
+  <p class="eyebrow">Preguntas</p><h2>Lo que más nos preguntan.</h2>
+  <details><summary>¿Puedo empezar con el archivo y pasar después a la suscripción?</summary><p>Sí. Desde Ajustes descargás una copia de tus datos, te suscribís y la importás en tu cuenta. Tu archivo y tu licencia siguen funcionando.</p></details>
+  <details><summary>¿Qué pasa si cambio de computadora?</summary><p>El archivo se puede activar en hasta 3 dispositivos. Si tenés que cambiar uno, lo desactivás desde Ajustes y activás el nuevo. Tus datos no viajan solos: llevás una copia y la restaurás.</p></details>
+  <details><summary>¿Se puede copiar el archivo y pasárselo a otra persona?</summary><p>Sin la clave y la contraseña no abre, y la clave funciona en hasta 3 dispositivos. Está pensado para uso personal o de una familia.</p></details>
+  <details><summary>¿Necesita internet?</summary><p>El archivo pide internet para activarse y, cada tanto, para renovar el permiso (funciona hasta 35 días sin conexión). La suscripción necesita conexión para sincronizar, pero guarda los cambios hasta que vuelva.</p></details>
+  <details><summary>¿Y si dejo de pagar la suscripción?</summary><p>La cuenta pasa a solo lectura: seguís viendo y descargando tus datos, pero no guardás cambios hasta renovar.</p></details>
+  <details><summary>¿El precio de $6.990 sigue?</summary><p>Es el precio de lanzamiento, por tiempo limitado. El precio normal es de $25.000 por mes.</p></details>
+  <details><summary>¿Quién ve mis datos?</summary><p>En el archivo, solo vos: se guardan en tu aparato. En la suscripción se guardan en nuestro servidor y solo se ven desde tu cuenta y las personas a las que invites.</p></details>
+</div></section>
+
+<section style="padding-top:0"><div class="w"><div class="end rv">
+  <h2>Empezá el año con todo en orden.</h2><p>Probá la demo, elegí tu forma y en unos minutos tenés tu agenda lista.</p>
+  <div class="cta"><a class="btn p" href="#precio">Elegir mi forma</a><a class="btn" href="#demo">Probar la demo</a></div>
+</div></div></section>
+
+<footer><div class="w"><span>© Gaku · Estrategia de datos</span><span><a href="licencia.php">Recuperar mi licencia</a> · <a href="app.php">Ya tengo cuenta</a> · <a href="https://instagram.com/estrategia.datos" rel="noopener">@estrategia.datos</a> · <a href="terminos.html">Términos y condiciones</a> · <a href="privacidad.html">Política de privacidad</a></span></div></footer>
+<a class="wa" href="https://wa.me/5491126425994?text=Hola!%20Quiero%20saber%20m%C3%A1s%20sobre%20Gaku" rel="noopener">WhatsApp</a>
+<script>
+(function(){
+  var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+  // progreso de lectura
+  var pg=$('#prog');function onS(){var h=document.documentElement;pg.style.width=Math.min(100,100*h.scrollTop/Math.max(1,h.scrollHeight-innerHeight))+'%';
+    var hp=$('#heroph');if(hp&&scrollY<900)hp.style.transform='translateY('+(-scrollY*.06)+'px)';}
+  addEventListener('scroll',onS,{passive:true});onS();
+  // aparecer al bajar
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});$$('.rv').forEach(function(e){io.observe(e)});}else $$('.rv').forEach(function(e){e.classList.add('in')});
+  // historia
+  var sts=$$('.st'),ims=$$('.sp img');
+  if('IntersectionObserver' in window){var so=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var i=e.target.getAttribute('data-i');sts.forEach(function(s){s.classList.toggle('on',s.getAttribute('data-i')===i)});ims.forEach(function(m){m.classList.toggle('on',m.getAttribute('data-i')===i)});}})},{rootMargin:'-45% 0px -45% 0px'});sts.forEach(function(s){so.observe(s)});}
+  // claro / oscuro
+  $$('.tog button').forEach(function(b){b.addEventListener('click',function(){$$('.tog button').forEach(function(x){x.classList.toggle('on',x===b)});$('#mf').classList.toggle('dk',b.getAttribute('data-m')==='d')})});
+  // demo en marcos
+  function fit(vp,f,w){f.style.transform='scale('+(vp.clientWidth/w)+')'}
+  var lv=$('#lapvp'),lf=$('#lapf'),pv=$('#phvp'),pf=$('#phf');function all(){fit(lv,lf,1200);fit(pv,pf,390)}all();addEventListener('resize',all);
+  var loaded=false;function load(){if(loaded)return;loaded=true;[lf,pf].forEach(function(f){f.src=f.getAttribute('data-src')})}
+  if('IntersectionObserver' in window){new IntersectionObserver(function(es,o){if(es[0].isIntersecting){load();o.disconnect()}},{rootMargin:'500px'}).observe($('#demo'))}else load();
+})();
+</script>
+<script src="track.js" defer></script>
+</body>
+</html>
