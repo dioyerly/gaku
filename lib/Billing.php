@@ -216,7 +216,7 @@ final class Billing
     }
 
     // ------------------------------------------------------------------ pago único
-    public static function onceCents(): int { return (int)round(((float)cfg('once.price', 12500)) * 100); }
+    public static function onceCents(): int { return (int)round(((float)cfg('once.price', 28510)) * 100); }
 
     public static function createOrder(): array
     {

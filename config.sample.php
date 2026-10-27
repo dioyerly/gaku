@@ -24,7 +24,7 @@ return [
 
     // Pago único (versión en un archivo HTML, sin sincronización)
     'once' => [
-        'price'       => 12500,   // pesos
+        'price'       => 28510,   // pesos
         'title'       => 'Gaku — versión en un archivo (pago único)',
         'max_devices' => 3,
         'recheck_days' => 7,      // cada cuánto se revalida la licencia si hay internet

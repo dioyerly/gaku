@@ -3,7 +3,7 @@ GAKU — puesta en marcha (Hostinger, PHP 8.3 + MariaDB)
 1) Subí TODO el contenido de esta carpeta a public_html (o al subdominio, ej. gaku.estrategia.site).
 2) En Hostinger creá una base MariaDB. Copiá config.sample.php como config.php y completá:
    - app_url (https://tu-dominio), db (host/nombre/usuario/clave)
-   - mp.access_token y mp.webhook_secret (tus credenciales de Mercado Pago) y mp.plan_url (link del plan de $6.990)
+   - mp.access_token y mp.webhook_secret (tus credenciales de Mercado Pago) y mp.plan_url (link del plan de $9.570, la prueba de 30 días se configura en el plan de Mercado Pago)
    - admin.email y admin.password_hash  (hash: php -r "echo password_hash('TU-CLAVE-LARGA', PASSWORD_DEFAULT);")
    - mail (SMTP, opcional)
    Las tablas se crean solas la primera vez.
