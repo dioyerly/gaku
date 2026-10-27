@@ -309,8 +309,8 @@ final class Billing
         if (!$l || $l['email'] === '') return false;
         $dl = self::appUrl() . '/descarga.php?k=' . rawurlencode($l['license_key']);
         $max = (int)$l['max_devices'];
-        return self::mailPublic($l['email'], 'Tu licencia de Gaku', "¡Gracias por tu compra!\n\nTu clave de licencia: {$l['license_key']}\n\nDescargá tu archivo de Gaku acá:\n$dl\n\nPodés usarlo en hasta $max dispositivos. Guardá este mensaje.\n",
-            '¡Gracias por tu compra!', '<p>Tu clave de licencia:</p><p style="font-size:22px;font-weight:bold;letter-spacing:.06em">' . htmlspecialchars($l['license_key']) . '</p><p><a href="' . htmlspecialchars($dl) . '" style="background:#0f5f73;color:#fff;padding:11px 18px;border-radius:10px;text-decoration:none;font-weight:bold">Descargar Gaku</a></p><p style="font-size:13px;color:#6a7685">Podés usarlo en hasta ' . $max . ' dispositivos. Guardá este mensaje.</p>');
+        return self::mailPublic($l['email'], 'Tu licencia de Gaku', "¡Gracias por tu compra!\n\nTu clave de licencia: {$l['license_key']}\n\nAbrí Gaku acá:\n$dl\n\nPodés usarlo en hasta $max dispositivos. Guardá este mensaje.\n",
+            '¡Gracias por tu compra!', '<p>Tu clave de licencia:</p><p style="font-size:22px;font-weight:bold;letter-spacing:.06em">' . htmlspecialchars($l['license_key']) . '</p><p><a href="' . htmlspecialchars($dl) . '" style="background:#0f5f73;color:#fff;padding:11px 18px;border-radius:10px;text-decoration:none;font-weight:bold">Abrir Gaku</a></p><p style="font-size:13px;color:#6a7685">Podés usarlo en hasta ' . $max . ' dispositivos. Guardá este mensaje.</p>');
     }
 
     public static function devicesOf(int $licId): array

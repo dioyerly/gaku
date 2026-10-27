@@ -13,8 +13,8 @@ if ($o['status'] === 'approved' && $o['license_id']) {
   $l = one('SELECT * FROM licenses WHERE id=?', [$o['license_id']]);
   $dl = 'descarga.php?k=' . rawurlencode($l['license_key']);
   gk_page('¡Gracias por tu compra!', '<h1>¡Gracias por tu compra!</h1><div class="o">Tu pago está aprobado.</div><p>Esta es tu <b>clave de licencia</b>. Guardala bien:</p><div class="key">' . gk_esc($l['license_key']) . '</div>'
-    . '<a class="b" href="' . gk_esc($dl) . '">Descargar Gaku</a>'
-    . '<ol><li>Guardá el archivo en una carpeta que no vayas a mover.</li><li>Abrilo con tu navegador (doble clic).</li><li>Escribí tu clave y elegí una contraseña.</li></ol>'
+    . '<a class="b" href="' . gk_esc($dl) . '">Abrir Gaku</a>'
+    . '<ol><li>Tocá Abrir Gaku. Se abre en esta misma pestaña.</li><li>Escribí tu clave y elegí una contraseña.</li></ol>'
     . '<p class="m">Podés usarlo en hasta ' . (int)$l['max_devices'] . ' dispositivos. También te lo mandamos por mail' . (Mailer::configured() ? '' : ' (si está disponible)') . '.</p>' . gk_ayuda());
 }
 if ($o['status'] === 'refunded') gk_page('Pago devuelto', '<h1>Pago devuelto</h1><div class="n">Este pago fue devuelto, por eso la licencia no está activa.</div>' . gk_ayuda());

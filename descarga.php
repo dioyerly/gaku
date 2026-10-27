@@ -17,5 +17,5 @@ $rep = [
   '__GAKU_BUILD__' => date('Ymd'),
 ];
 $out = strtr($tpl, $rep);
-header('Content-Type: text/html; charset=utf-8'); header('Content-Disposition: attachment; filename="Gaku.html"'); header('Cache-Control: no-store'); header('X-Content-Type-Options: nosniff');
+header('Content-Type: text/html; charset=utf-8'); header('Content-Disposition: inline; filename="Gaku.html"'); header('Cache-Control: no-store'); header('X-Content-Type-Options: nosniff');
 echo $out;
