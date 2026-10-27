@@ -1,0 +1,16 @@
+Options -Indexes
+DirectoryIndex index.html app.php
+<FilesMatch "^config\.(php|sample\.php)$">
+  Require all denied
+</FilesMatch>
+<FilesMatch "\.(sql|sqlite|log|md|py|sh)$">
+  Require all denied
+</FilesMatch>
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "same-origin"
+</IfModule>
+# Carpetas internas: nunca se sirven desde afuera
+RewriteEngine On
+RewriteRule ^(lib|storage|bin|src|tests)(/|$) - [F,L]
+RewriteRule ^(build\.py|cron\.php)$ - [R=404,L]

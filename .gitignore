@@ -1,0 +1,29 @@
+# Configuración y credenciales
+config.php
+config.local.php
+.env
+.env.local
+
+# Claves de licencias (críticas)
+storage/keys
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Logs y temporales
+*.log
+*.tmp
+
+# Deploy (versión anterior)
+deploy/
+
+# Vendor/dependencias si usa composer
+vendor/
+node_modules/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
