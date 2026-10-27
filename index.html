@@ -45,6 +45,7 @@ h2{font-size:clamp(1.9rem,4.4vw,3rem);margin-bottom:16px}
 .hero p.l{font-size:1.25rem;color:var(--mut);max-width:36ch;margin:22px 0 30px}
 .cta{display:flex;gap:12px;flex-wrap:wrap}
 .hint{font-size:.88rem;color:var(--mut);margin-top:16px}
+.promo{display:inline-block;margin:18px 0 0;background:var(--ac);color:var(--ac-ink);padding:9px 16px;border-radius:99px;font-weight:700;font-size:.95rem}
 .stage{position:relative;margin:56px auto 0;max-width:1080px}
 .lap{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surf);box-shadow:var(--sh)}
 .lap .dots{display:flex;gap:7px;padding:11px 14px;background:var(--surf2);border-bottom:1px solid var(--line)}
@@ -89,8 +90,8 @@ h2{font-size:clamp(1.9rem,4.4vw,3rem);margin-bottom:16px}
 .mode .tog button{border:0;background:none;padding:9px 20px;border-radius:99px;font:600 .95rem Figtree;color:var(--mut);cursor:pointer}
 .mode .tog button.on{background:var(--ac);color:var(--ac-ink)}
 .mode .frame{position:relative;max-width:980px;margin:0 auto}
-.mode .frame img{border-radius:14px;border:1px solid var(--line);box-shadow:var(--sh);transition:opacity .4s}
-.mode .frame img.b{position:absolute;inset:0;opacity:0}
+.mode .frame img{display:block;width:100%;height:auto}
+.mode .frame img.b{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0}
 .mode .frame.dk img.b{opacity:1}
 .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
 .chips span{padding:8px 16px;border-radius:99px;background:var(--surf);border:1px solid var(--line);font-weight:600;font-size:.92rem}
@@ -157,6 +158,7 @@ footer{padding:34px 0 60px;color:var(--mut);font-size:.9rem}footer .w{display:fl
     <h1>El año de estudio, <span>sin perder el hilo.</span></h1>
     <p class="l">Horarios, tareas, exámenes, apuntes y qué llevar mañana. Todo en un solo lugar, claro y tranquilo.</p>
     <div class="cta"><a class="btn p" href="#precio">Ver las dos formas de tenerlo</a><a class="btn" href="#demo">Probar la demo</a></div>
+    <p class="promo">30 días gratis con la suscripción · después $9.570 por mes</p>
     <p class="hint">La demo no pide registro · datos de ejemplo · se abre en esta misma página</p>
   </div>
   <div class="stage rv">
