@@ -10,9 +10,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
     exit;
 }
 
-// Validar token
-$token = (string)cfg('centro.export_token', '');
-if ($token === '' || strlen($token) < 32) {
+// Validar token (leer hash desde base de datos)
+$tokenHashRow = one('SELECT v FROM meta WHERE k=?', ['centro_token_hash']);
+$tokenHash = $tokenHashRow ? (string)$tokenHashRow['v'] : '';
+
+if ($tokenHash === '') {
     http_response_code(503);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'not_configured']);
@@ -25,7 +27,9 @@ if (preg_match('/^Bearer\s+(\S+)$/', $auth, $m)) {
     $bearerToken = $m[1];
 }
 
-if (!hash_equals($token, $bearerToken)) {
+// Hashear el token que viene y comparar
+$receivedHash = hash('sha256', $bearerToken);
+if (!hash_equals($tokenHash, $receivedHash)) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'unauthorized']);
