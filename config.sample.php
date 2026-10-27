@@ -49,4 +49,9 @@ return [
 
     // El registro libre está cerrado: se entra pagando o con invitación de una familia.
     'open_registration' => false,
+
+    // Centro de operaciones
+    'centro' => [
+        'export_token' => '',   // Token de acceso a export.php: mínimo 32 caracteres. Poné el mismo valor en el botón Conectar app del Centro.
+    ],
 ];
