@@ -299,6 +299,46 @@ try {
         [$now - 30 * 86400]
     )['c'] ?? 0);
 
+    // Landing (misma lógica que la pestaña Landing del panel admin)
+    $rango = (int)($_GET['d'] ?? 30);
+    if (!in_array($rango, [7, 30, 90], true)) $rango = 30;
+    $desde = date('Y-m-d', $now - ($rango - 1) * 86400);
+    $hoyD = date('Y-m-d', $now);
+    $dias = [];
+    for ($i = $rango - 1; $i >= 0; $i--) $dias[date('Y-m-d', $now - $i * 86400)] = ['dia' => date('Y-m-d', $now - $i * 86400), 'visitas' => 0, 'clicks' => 0, 'clicks_whatsapp' => 0];
+    $tot = ['visitas' => 0, 'precio' => 0, 'clicks_suscribirme' => 0, 'clicks_whatsapp' => 0, 'clicks_app' => 0, 'scroll50' => 0, 'scroll90' => 0];
+    $hoy = ['visitas' => 0, 'clicks' => 0];
+    foreach (all('SELECT day, COUNT(DISTINCT IF(type="visita",visitor,NULL)) v, COUNT(DISTINCT IF(type="precio",visitor,NULL)) p, COUNT(DISTINCT IF(type="scroll50",visitor,NULL)) s5, COUNT(DISTINCT IF(type="scroll90",visitor,NULL)) s9, SUM(type="click_sub") cs, SUM(type="click_wa") cw, SUM(type="click_app") ca FROM landing_events WHERE day>=? GROUP BY day', [$desde]) as $r) {
+        $d = (string)$r['day'];
+        if (isset($dias[$d])) { $dias[$d]['visitas'] = (int)$r['v']; $dias[$d]['clicks'] = (int)$r['cs']; $dias[$d]['clicks_whatsapp'] = (int)$r['cw']; }
+        $tot['visitas'] += (int)$r['v']; $tot['precio'] += (int)$r['p']; $tot['scroll50'] += (int)$r['s5']; $tot['scroll90'] += (int)$r['s9'];
+        $tot['clicks_suscribirme'] += (int)$r['cs']; $tot['clicks_whatsapp'] += (int)$r['cw']; $tot['clicks_app'] += (int)$r['ca'];
+        if ($d === $hoyD) { $hoy['visitas'] = (int)$r['v']; $hoy['clicks'] = (int)$r['cs']; }
+    }
+    $origen = [];
+    foreach (all('SELECT IF(source="","directo",source) o, COUNT(DISTINCT IF(type="visita",CONCAT(day,visitor),NULL)) v, COUNT(DISTINCT IF(type IN ("click_sub","click_buy"),CONCAT(day,visitor),NULL)) c FROM landing_events WHERE day>=? GROUP BY o ORDER BY v DESC, c DESC LIMIT 12', [$desde]) as $r) {
+        $origen[] = ['origen' => (string)$r['o'], 'visitas' => (int)$r['v'], 'clicks' => (int)$r['c']];
+    }
+    $disp = [];
+    foreach (all('SELECT device d, COUNT(DISTINCT IF(type="visita",CONCAT(day,visitor),NULL)) v, COUNT(DISTINCT IF(type IN ("click_sub","click_buy"),CONCAT(day,visitor),NULL)) c FROM landing_events WHERE day>=? AND device<>"" GROUP BY d ORDER BY v DESC', [$desde]) as $r) {
+        $disp[] = ['dispositivo' => (string)$r['d'], 'visitas' => (int)$r['v'], 'clicks' => (int)$r['c']];
+    }
+    $boton = [];
+    foreach (all('SELECT type t, IF(detail="","—",detail) b, COUNT(*) c FROM landing_events WHERE day>=? AND type IN ("click_sub","click_buy") GROUP BY t, b ORDER BY c DESC', [$desde]) as $r) {
+        $boton[] = ['tipo' => (string)$r['t'], 'boton' => (string)$r['b'], 'clicks' => (int)$r['c']];
+    }
+    $ult = one('SELECT MAX(ts) m FROM landing_events');
+    $result['landing'] = [
+        'tiene_datos' => one('SELECT id FROM landing_events LIMIT 1') !== null,
+        'totales' => $tot,
+        'hoy' => $hoy,
+        'por_dia' => array_values($dias),
+        'origen' => $origen,
+        'dispositivo' => $disp,
+        'boton' => $boton,
+        'ultimo_evento' => $ult && $ult['m'] ? date('Y-m-d H:i:s', (int)$ult['m']) : null,
+    ];
+
     $result['generado'] = date('c');
 
     $out($result);
