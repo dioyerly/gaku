@@ -141,7 +141,7 @@ final class Billing
 
     // ------------------------------------------------------------------ acceso
     /** state: active | readonly | blocked · kind: paid | trial | manual | courtesy | none */
-    public static function calc(array $owner, ?array $sub, ?int $lastPaid, ?int $now = null, ?int $grace = null): array
+    public static function calc(array $owner, ?array $sub, ?int $lastPaid, ?int $now = null, ?int $grace = null, bool $pruebaUsada = false): array
     {
         $now ??= time(); $grace ??= (int)cfg('mp.grace_days', 5);
         $ov = $owner['access_override'] ?? 'auto';
@@ -158,12 +158,15 @@ final class Billing
             return ['state' => $ok ? 'active' : 'readonly', 'kind' => 'manual', 'reason' => ($ok ? 'Acceso manual: ' : 'Acceso manual vencido: ') . ($sub['reason'] ?: 'prueba o regalo'), 'until' => $next ?: null];
         }
         if ($st === 'authorized') {
-            if (!$lastPaid && $next > $now) return ['state' => 'active', 'kind' => 'trial', 'reason' => 'Prueba gratis', 'until' => $next];
+            if (!$lastPaid && $next > $now) {
+                if ($pruebaUsada) return ['state' => 'readonly', 'kind' => 'paid', 'reason' => 'Este correo ya usó la prueba gratis: el acceso empieza con el primer cobro.', 'until' => null];
+                return ['state' => 'active', 'kind' => 'trial', 'reason' => 'Prueba gratis', 'until' => $next];
+            }
             $until = max($paidUntil, $next ? $next + $g : 0);
             return $now <= $until ? ['state' => 'active', 'kind' => 'paid', 'reason' => 'Suscripción al día', 'until' => $until]
                                   : ['state' => 'readonly', 'kind' => 'paid', 'reason' => 'Cobro pendiente: la suscripción no registra pagos recientes', 'until' => $until];
         }
-        if ($st === 'cancelled' && !$lastPaid && $next > 0 && $now <= $next) return ['state' => 'active', 'kind' => 'trial', 'reason' => 'Prueba gratis (baja pedida, sin cobros)', 'until' => $next];
+        if ($st === 'cancelled' && !$lastPaid && $next > 0 && $now <= $next && !$pruebaUsada) return ['state' => 'active', 'kind' => 'trial', 'reason' => 'Prueba gratis (baja pedida, sin cobros)', 'until' => $next];
         if ($lastPaid && $now <= $paidUntil - $g) return ['state' => 'active', 'kind' => 'paid', 'reason' => 'Período pagado vigente (suscripción ' . $st . ')', 'until' => $paidUntil - $g];
         return ['state' => 'readonly', 'kind' => 'paid', 'reason' => 'Suscripción ' . $st, 'until' => $lastPaid ? $paidUntil - $g : null];
     }
@@ -184,7 +187,8 @@ final class Billing
             $r = one('SELECT MAX(COALESCE(debit_date, updated)) m FROM payments WHERE preapproval_id=? AND status="processed"', [$sub['preapproval_id']]);
             $last = $r && $r['m'] !== null ? (int)$r['m'] : null;
         }
-        $a = self::calc($o, $sub, $last);
+        $pruebaUsada = !empty($sub['payer_email']) && (bool)one('SELECT id FROM subscriptions WHERE payer_email=? AND id<? AND preapproval_id NOT LIKE "manual-%" LIMIT 1', [$sub['payer_email'], $sub['id']]);
+        $a = self::calc($o, $sub, $last, null, null, $pruebaUsada);
         $a['sub'] = $sub; $a['last_paid'] = $last;
         return $a;
     }
