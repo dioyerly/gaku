@@ -9,6 +9,8 @@ DirectoryIndex index.html app.php
 <IfModule mod_headers.c>
   Header set X-Content-Type-Options "nosniff"
   Header set Referrer-Policy "same-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Strict-Transport-Security "max-age=31536000"
 </IfModule>
 # Carpetas internas: nunca se sirven desde afuera
 RewriteEngine On
