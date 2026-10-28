@@ -19,6 +19,7 @@ return [
         'webhook_secret' => '',   // Tus integraciones → Webhooks → Clave secreta
         'api_base'       => 'https://api.mercadopago.com',
         'plan_url'       => '',   // Link del plan de suscripción (el que te da Mercado Pago al crear el plan)
+        'plan_url_sin_prueba' => '',   // Link del plan de suscripción SIN prueba (se usa si el correo ya tuvo una suscripción)
         'grace_days'     => 5,    // días de gracia si un cobro se demora
     ],
 
