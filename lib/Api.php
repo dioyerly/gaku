@@ -58,7 +58,7 @@ final class Api
         }
     }
 
-    /** Acceso por pago: bloqueado => afuera; solo lectura => se puede ver y exportar, no guardar. */
+    /** Acceso por pago: bloqueado => afuera; solo lectura => se puede ver, no guardar. */
     public static ?array $access = null;
     private static function gate(string $method, array $parts): void
     {
@@ -72,7 +72,7 @@ final class Api
             throw new HttpError(401, 'Tu cuenta está bloqueada. Escribinos para resolverlo.', 'blocked');
         }
         if ($a['state'] === 'readonly' && $method !== 'GET' && $method !== 'HEAD' && $first !== 'auth' && $first !== 'meta' && $first !== 'subscription') {
-            throw new HttpError(402, 'Tu suscripción no está al día: podés ver y descargar tus datos, pero no guardar cambios. Renovala para seguir.', 'readonly', ['access' => self::accessOut($a)]);
+            throw new HttpError(402, 'Tu suscripción no está al día: podés ver tus datos, pero no guardar cambios. Renovala para seguir.', 'readonly', ['access' => self::accessOut($a)]);
         }
     }
 
