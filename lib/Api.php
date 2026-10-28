@@ -433,6 +433,8 @@ final class Api
         }
         // 2) Cancelar
         foreach ($pids as $pid) {
+            $estado = one('SELECT status FROM subscriptions WHERE preapproval_id=?', [$pid]);
+            if (($estado['status'] ?? '') === 'cancelled') continue;
             try {
                 Billing::cancelPreapproval($pid);
             } catch (Throwable $e) {
