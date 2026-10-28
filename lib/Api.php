@@ -412,6 +412,17 @@ final class Api
         $m = self::$member;
         $b = self::body();
         if (!password_verify((string)($b['password'] ?? ''), $u['pass_hash'])) throw new HttpError(403, 'La contraseña no coincide', 'bad_login');
+        if ($m && (int)$m['owner_id'] === (int)$u['id']) {
+            $subs = all('SELECT preapproval_id FROM subscriptions WHERE user_id=? AND status IN ("authorized","paused","pending") AND preapproval_id NOT LIKE "manual-%"', [$u['id']]);
+            foreach ($subs as $s) {
+                try {
+                    Billing::cancelPreapproval((string)$s['preapproval_id']);
+                } catch (Throwable $e) {
+                    error_log('borrar cuenta: no se pudo cancelar la suscripción: ' . $e->getMessage());
+                    throw new HttpError(502, 'No pudimos cancelar tu suscripción en Mercado Pago, así que tu cuenta no se borró. Probá de nuevo en unos minutos.', 'mp');
+                }
+            }
+        }
         $pdo = db();
         $pdo->beginTransaction();
         try {
@@ -426,6 +437,7 @@ final class Api
             }
             q('DELETE FROM reminders WHERE user_id=?', [$u['id']]);
             q('DELETE FROM digests WHERE user_id=?', [$u['id']]);
+            q('UPDATE subscriptions SET user_id=NULL WHERE user_id=?', [$u['id']]);
             q('DELETE FROM users WHERE id=?', [$u['id']]);
             $pdo->commit();
         } catch (Throwable $e) {
@@ -499,7 +511,8 @@ final class Api
         $mode = ($b['mode'] ?? '') === 'family' ? 'family' : 'self';
         $studs = is_array($b['students'] ?? null) ? $b['students'] : [];
         if (!$studs) throw new HttpError(422, 'Agregá al menos un estudiante', 'students');
-        if (count($studs) > 12) throw new HttpError(422, 'Demasiados estudiantes', 'students');
+        $tope = $mode === 'family' ? 3 : 12;
+        if (count($studs) > $tope) throw new HttpError(422, $tope === 3 ? 'En modo familia podés agregar hasta 3 estudiantes.' : 'Demasiados estudiantes', 'students');
         $fid = uid(8);
         $pdo = db();
         $pdo->beginTransaction();
@@ -560,6 +573,7 @@ final class Api
         }
         $name = isset($b['name']) ? (self::str($b['name'], 80) ?: $f['name']) : $f['name'];
         $mode = isset($b['mode']) && in_array($b['mode'], ['self', 'family'], true) ? $b['mode'] : $f['mode'];
+        if ($mode === 'family' && $f['mode'] !== 'family' && self::activeStudentCount($m['family_id']) > 3) throw new HttpError(422, 'Tenés más de 3 estudiantes activos. Archivá o quitá alguno antes de pasar a modo familia.', 'limit');
         q('UPDATE families SET name=?, mode=?, settings=? WHERE id=?', [$name, $mode, jenc($s), $f['id']]);
         self::$member = null; self::$user = null; self::user();
         return self::meOut();
@@ -949,6 +963,22 @@ final class Api
         $b = self::body();
         if (!is_array($b['records'] ?? null) || !is_array($b['students'] ?? null)) throw new HttpError(422, 'El archivo no parece una copia de esta app', 'bad_file');
         $fid = $m['family_id'];
+        if (self::studentCap($m) === 3) {
+            // La importación no cambia el modo de la familia: el modo que queda es el actual.
+            $known = all('SELECT id, name FROM students WHERE family_id=? AND deleted_at IS NULL', [$fid]);
+            $nuevos = 0;
+            foreach ($b['students'] as $s) {
+                if (!is_array($s)) continue;
+                $oid = (string)($s['id'] ?? ''); $nom = mb_strtolower((string)($s['name'] ?? ''));
+                $hit = false;
+                foreach ($known as $e) if ($e['id'] === $oid || mb_strtolower($e['name']) === $nom) { $hit = true; break; }
+                if ($hit) continue;
+                $known[] = ['id' => $oid, 'name' => (string)($s['name'] ?? '')];
+                $stSet = is_array($s['settings'] ?? null) ? $s['settings'] : [];
+                if (empty($stSet['archived'])) $nuevos++;
+            }
+            if ($nuevos > 0 && self::activeStudentCount($fid) + $nuevos > 3) throw new HttpError(422, 'La copia tiene más de 3 estudiantes activos para el modo familia.', 'limit');
+        }
         $pdo = db();
         $pdo->beginTransaction();
         try {
