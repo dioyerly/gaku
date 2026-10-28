@@ -279,11 +279,19 @@ final class Api
         if ($invite !== '') $inv = self::inviteCheck($invite);
         if (one('SELECT id FROM users WHERE email=?', [$email])) throw new HttpError(409, 'Ese correo ya tiene una cuenta. Iniciá sesión.', 'exists');
         $token = bin2hex(random_bytes(20));
-        q('INSERT INTO users(email,pass_hash,name,email_verified,verify_token,verify_expires,settings,created_at) VALUES(?,?,?,0,?,?,?,?)', [
-            $email, password_hash($pass, PASSWORD_DEFAULT), $name, hash('sha256', $token), time() + 172800, '{}', time(),
-        ]);
-        $uid = (int)db()->lastInsertId();
-        if ($inv) self::inviteUse($inv, $uid);
+        $pdo = db();
+        $pdo->beginTransaction();
+        try {
+            q('INSERT INTO users(email,pass_hash,name,email_verified,verify_token,verify_expires,settings,created_at) VALUES(?,?,?,0,?,?,?,?)', [
+                $email, password_hash($pass, PASSWORD_DEFAULT), $name, hash('sha256', $token), time() + 172800, '{}', time(),
+            ]);
+            $uid = (int)$pdo->lastInsertId();
+            if ($inv) self::inviteUse($inv, $uid);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
         self::sendVerification($email, $name, $token);
         self::startSession($uid);
         return self::meOut();
@@ -898,8 +906,17 @@ final class Api
     {
         $pdo = db();
         if (one('SELECT id FROM members WHERE user_id=?', [$uid])) throw new HttpError(409, 'Esta cuenta ya pertenece a una familia', 'exists');
-        q('INSERT INTO members(family_id,user_id,role,student_id,created_at) VALUES(?,?,?,?,?)', [$i['family_id'], $uid, $i['role'], $i['role'] === 'student' ? $i['student_id'] : null, time()]);
-        q('UPDATE invites SET used_by=?, used_at=? WHERE code=?', [$uid, time(), $i['code']]);
+        $propia = !$pdo->inTransaction();
+        if ($propia) $pdo->beginTransaction();
+        try {
+            $r = q('UPDATE invites SET used_by=?, used_at=? WHERE code=? AND used_by IS NULL AND revoked=0 AND expires_at>=?', [$uid, time(), $i['code'], time()]);
+            if ($r->rowCount() !== 1) throw new HttpError(400, 'La invitación no es válida o ya venció', 'bad_invite');
+            q('INSERT INTO members(family_id,user_id,role,student_id,created_at) VALUES(?,?,?,?,?)', [$i['family_id'], $uid, $i['role'], $i['role'] === 'student' ? $i['student_id'] : null, time()]);
+            if ($propia) $pdo->commit();
+        } catch (Throwable $e) {
+            if ($propia && $pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
     }
 
     private static function inviteAccept(): array

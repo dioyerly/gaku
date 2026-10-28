@@ -3,10 +3,10 @@ declare(strict_types=1);
 /* Páginas públicas simples del servidor (alta, gracias, licencia): mismo estilo que Gaku. */
 function gk_esc($s): string { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function gk_stamp(int $size = 40): string { return ''; }  // sin logo: la marca es solo el nombre
-function gk_page(string $title, string $body, int $status = 200): void {
+function gk_page(string $title, string $body, int $status = 200, string $formAction = "'self'"): void {
   http_response_code($status);
   header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: no-store'); header('X-Frame-Options: DENY'); header('X-Content-Type-Options: nosniff'); header('Referrer-Policy: same-origin'); header('X-Robots-Tag: noindex');
-  header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+  header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action $formAction; base-uri 'none'; frame-ancestors 'none'");
   echo '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>' . gk_esc($title) . ' · Gaku</title><style>
 :root{--paper:#f4f7f8;--card:#fff;--ink:#14232b;--mut:#55676f;--indigo:#0f6b7d;--ver:#3f8f6b;--line:#d3dfe3;--ok:#1f5b3b;--bad:#8d2416}
 @media(prefers-color-scheme:dark){:root{--paper:#0e171c;--card:#15232a;--ink:#e8f1f4;--mut:#9db1ba;--indigo:#5cc0d2;--ver:#6cc79a;--line:#29414c;--ok:#7fd3a8;--bad:#ff9486}}
