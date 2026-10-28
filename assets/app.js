@@ -1782,12 +1782,17 @@ VIEWS.ajustes = function () {
     h('div', { class: 'field' }, h('label', { for: 'tzsel' }, 'Zona horaria'), h('select', { id: 'tzsel', onchange: (e) => saveSettings({ tz: e.target.value }) }, tzOptions(s.tz || curStudent()?.tz).map(([z, l]) => h('option', { value: z, selected: z === (s.tz || curStudent()?.tz) }, l))), h('p', { class: 'hint' }, 'Los avisos y resúmenes por correo se calculan con esta zona.'))]));
   root.append(LOCAL ? section('Avisos por correo', [h('p', { class: 'muted' }, 'La versión de un archivo no envía correos. Con la suscripción recibís avisos de tareas, exámenes y materiales.')]) : section('Avisos por correo', notifSection()));
   root.append(section('Accesibilidad', [h('ul', { class: 'tips' }, h('li', null, 'Se puede usar todo con teclado: Tab para moverte, Enter o Espacio para activar, Esc para cerrar ventanas.'), h('li', null, 'El estado de cada cosa se indica con texto e ícono, no solo con color.'), h('li', null, 'Si tu dispositivo pide “reducir movimiento”, la app lo respeta.'), h('li', null, 'Podés agrandar el texto arriba, en “Tamaño del texto”.'))]));
+  if (!NOSRV && S.member?.is_owner) root.append(section('Suscripción', [h('p', { class: 'muted' }, 'Podés cancelar cuando quieras. Seguís con acceso hasta el final del período que ya pagaste.'), h('div', { class: 'btnrow' }, h('button', { class: 'btn danger-o', onclick: cancelSubscription }, 'Cancelar suscripción'))]));
   root.append(section('Tus datos', [h('p', { class: 'muted' }, LOCAL ? 'Los datos se guardan solo en este dispositivo. Hacé copias seguido: es la única forma de recuperarlos si se borran los datos del navegador.' : 'Los datos se guardan en el servidor de esta app. Podés llevarte una copia o borrar todo cuando quieras.'),
     isGuardian() && h('div', { class: 'btnrow wrap' }, h('button', { class: 'btn', onclick: exportData }, icon('download', 16), 'Descargar copia (JSON)'), h('button', { class: 'btn', onclick: importData }, icon('upload', 16), 'Restaurar desde copia')),
     !DEMO && h('button', { class: 'btn danger-o', onclick: deleteAccount }, icon('trash', 16), LOCAL ? 'Borrar los datos de este dispositivo' : 'Eliminar mi cuenta')]));
   root.append(h('p', { class: 'muted small' }, BRAND.name + (DEMO ? ' · demostración con datos ficticios' : LOCAL ? ' · versión de un archivo' : '')));
   return root;
 };
+async function cancelSubscription() {
+  if (!(await confirmDlg('¿Cancelar la suscripción?', 'Cancelar suscripción', true, 'Seguís con acceso hasta el final del período que ya pagaste. Después la cuenta pasa a solo lectura: podés ver y descargar tus datos.'))) return;
+  try { await api('POST', 'subscription/cancel'); await syncNow(true); toast('Suscripción cancelada. Seguís con acceso hasta el final del período pagado.'); } catch (e) { toast(e.message, 'bad'); }
+}
 function notifSection() {
   const n = JSON.parse(JSON.stringify(S.me.settings.notif || { email: false, leadMin: 1440, daily: true, weekly: false, digestHour: '07:00', quiet: { enabled: false, from: '22:00', to: '07:00' }, cats: { tasks: true, exams: true, materials: true, events: true } }));
   const box = h('div'); const stat = h('div', { class: 'mailstat' });

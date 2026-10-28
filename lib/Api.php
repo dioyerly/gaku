@@ -71,7 +71,7 @@ final class Api
             $_SESSION = []; session_regenerate_id(true); $_SESSION['csrf'] = bin2hex(random_bytes(16));
             throw new HttpError(401, 'Tu cuenta está bloqueada. Escribinos para resolverlo.', 'blocked');
         }
-        if ($a['state'] === 'readonly' && $method !== 'GET' && $method !== 'HEAD' && $first !== 'auth' && $first !== 'meta') {
+        if ($a['state'] === 'readonly' && $method !== 'GET' && $method !== 'HEAD' && $first !== 'auth' && $first !== 'meta' && $first !== 'subscription') {
             throw new HttpError(402, 'Tu suscripción no está al día: podés ver y descargar tus datos, pero no guardar cambios. Renovala para seguir.', 'readonly', ['access' => self::accessOut($a)]);
         }
     }
@@ -140,6 +140,9 @@ final class Api
             case 'family':
                 if ($m === 'POST' && $b === 'setup') return self::familySetup();
                 if ($m === 'PUT') return self::familyUpdate();
+                break;
+            case 'subscription':
+                if ($m === 'POST' && $b === 'cancel') return self::subscriptionCancel();
                 break;
             case 'students':
                 if ($m === 'POST' && !$b) return self::studentSave(null);
@@ -515,6 +518,23 @@ final class Api
         self::$user = null; self::$member = null;
         self::user();
         return self::meOut() + ['first_student' => $first];
+    }
+
+    private static function subscriptionCancel(): array
+    {
+        $u = self::user();
+        $m = self::guardian();
+        if ((int)$m['owner_id'] !== (int)$u['id']) throw new HttpError(403, 'Solo quien pagó la suscripción puede cancelarla.', 'forbidden');
+        $sub = one('SELECT preapproval_id, status FROM subscriptions WHERE user_id=? ORDER BY (status="authorized") DESC, updated DESC LIMIT 1', [$u['id']]);
+        if (!$sub || $sub['status'] !== 'authorized') throw new HttpError(422, 'No hay una suscripción activa para cancelar.', 'no_sub');
+        try {
+            Billing::cancelPreapproval((string)$sub['preapproval_id']);
+        } catch (Throwable $e) {
+            error_log('cancelar suscripción: ' . $e->getMessage());
+            throw new HttpError(502, 'No pudimos cancelar la suscripción ahora. Probá de nuevo en unos minutos.', 'mp');
+        }
+        Billing::audit('app', 'suscripcion_cancelada', (string)$u['email']);
+        return ['ok' => true];
     }
 
     private static function familyUpdate(): array
