@@ -1790,7 +1790,7 @@ VIEWS.ajustes = function () {
   return root;
 };
 async function cancelSubscription() {
-  if (!(await confirmDlg('¿Cancelar la suscripción?', 'Cancelar suscripción', true, 'Seguís con acceso hasta el final del período que ya pagaste. Después la cuenta pasa a solo lectura: podés ver y descargar tus datos.'))) return;
+  if (!(await confirmDlg('¿Cancelar la suscripción?', 'Cancelar suscripción', true, 'Seguís con acceso hasta el final del período que ya pagaste. Después la cuenta pasa a solo lectura: podés ver tus datos.'))) return;
   try { await api('POST', 'subscription/cancel'); await syncNow(true); toast('Suscripción cancelada. Seguís con acceso hasta el final del período pagado.'); } catch (e) { toast(e.message, 'bad'); }
 }
 function notifSection() {
