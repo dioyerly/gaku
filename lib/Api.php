@@ -433,6 +433,10 @@ final class Api
                 foreach (all('SELECT user_id FROM members WHERE family_id=? AND user_id<>?', [$fid, $u['id']]) as $o) {
                     q('DELETE FROM reminders WHERE user_id=?', [$o['user_id']]);
                 }
+                foreach (all('SELECT user_id FROM members WHERE family_id=? AND user_id<>?', [$fid, $u['id']]) as $o) {
+                    q('DELETE FROM digests WHERE user_id=?', [$o['user_id']]);
+                    q('DELETE FROM users WHERE id=?', [$o['user_id']]);
+                }
                 q('DELETE FROM families WHERE id=?', [$fid]);
             }
             q('DELETE FROM reminders WHERE user_id=?', [$u['id']]);
