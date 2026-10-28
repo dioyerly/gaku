@@ -573,6 +573,12 @@ final class Api
             $st['archived'] = (bool)$b['archived'];
             q('UPDATE students SET settings=?, updated_at=? WHERE id=?', [jenc($st), now_ms(), $sid]);
         }
+        if (isset($b['minor'])) {
+            $row = one('SELECT settings FROM students WHERE id=?', [$sid]);
+            $st = jdec($row['settings']);
+            $st['minor'] = (bool)$b['minor'];
+            q('UPDATE students SET settings=?, updated_at=? WHERE id=?', [jenc($st), now_ms(), $sid]);
+        }
         return ['student' => self::studentOut(one('SELECT * FROM students WHERE id=?', [$sid]))];
     }
 
@@ -763,12 +769,16 @@ final class Api
     {
         $u = self::user();
         $m = self::guardian();
+        if ((int)$m['owner_id'] !== (int)$u['id']) throw new HttpError(403, 'Solo quien creó la familia puede invitar.', 'forbidden');
         $b = self::body();
         $role = ($b['role'] ?? '') === 'student' ? 'student' : 'guardian';
         $sid = null;
         if ($role === 'student') {
             $sid = (string)($b['student_id'] ?? '');
             if (!one('SELECT id FROM students WHERE id=? AND family_id=? AND deleted_at IS NULL', [$sid, $m['family_id']])) throw new HttpError(422, 'Elegí un estudiante', 'student');
+            $stRow = one('SELECT settings FROM students WHERE id=?', [$sid]);
+            $stSet = jdec($stRow['settings'] ?? null);
+            if (empty($stSet['minor'])) throw new HttpError(422, 'Solo se puede dar acceso a un estudiante marcado como menor de 18. Si es mayor, tiene que crear su propia cuenta con suscripción.', 'minor');
             if (one('SELECT id FROM members WHERE student_id=? AND family_id=?', [$sid, $m['family_id']])) throw new HttpError(409, 'Ese estudiante ya tiene acceso propio. Quitalo primero para invitar de nuevo.', 'exists');
         }
         if (!rate_hit('invite:' . $u['id'], 20, 3600)) throw new HttpError(429, 'Demasiadas invitaciones', 'rate');
