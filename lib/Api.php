@@ -174,7 +174,6 @@ final class Api
                 if ($m === 'POST' && !$b) return self::fileUpload();
                 if ($m === 'GET' && $b) { self::fileServe($b); return null; }
                 break;
-            case 'export': if ($m === 'GET') { self::export(); return null; } break;
             case 'import': if ($m === 'POST') return self::import(); break;
             case 'reminders':
                 if ($m === 'GET' && $b === 'status') return self::reminderStatus();
@@ -943,23 +942,6 @@ final class Api
     }
 
     // ---------------------------------------------------------- exportar / importar
-    private static function export(): void
-    {
-        $u = self::user();
-        $m = self::guardian();
-        $f = one('SELECT * FROM families WHERE id=?', [$m['family_id']]);
-        $out = [
-            'app' => cfg('brand.name'), 'version' => 1, 'exported_at' => gmdate('c'),
-            'family' => ['name' => $f['name'], 'mode' => $f['mode'], 'settings' => jdec($f['settings'])],
-            'students' => array_map([self::class, 'studentOut'], all('SELECT * FROM students WHERE family_id=? AND deleted_at IS NULL', [$m['family_id']])),
-            'records' => array_map([self::class, 'recOut'], all("SELECT * FROM records WHERE family_id=? AND deleted_at IS NULL AND (visibility='family' OR created_by=?)", [$m['family_id'], $u['id']])),
-        ];
-        header_remove('Content-Type');
-        header('Content-Type: application/json; charset=utf-8');
-        header('Content-Disposition: attachment; filename="gaku-copia-' . date('Ymd') . '.json"');
-        echo jenc($out);
-    }
-
     private static function import(): array
     {
         $u = self::user();

@@ -1170,7 +1170,7 @@ function accessBar() {
   const a = S.access; if (!a || NOSRV) return;
   const days = a.until ? Math.ceil((a.until - Date.now() / 1000) / 86400) : null;
   const link = (t) => a.owner && a.plan_url ? h('a', { class: 'btn sm primary', href: a.plan_url, target: '_blank', rel: 'noopener' }, t) : null;
-  if (a.state === 'readonly') box.append(h('div', { class: 'gk-banner bad', role: 'status' }, icon('lock', 16), h('span', null, a.owner ? 'Tu suscripción no está al día. Podés ver y descargar tus datos, pero no guardar cambios.' : 'La suscripción del responsable de la cuenta no está al día. Podés ver tus datos, pero no guardar cambios.'), h('span', { class: 'sp' }), link('Renovar suscripción')));
+  if (a.state === 'readonly') box.append(h('div', { class: 'gk-banner bad', role: 'status' }, icon('lock', 16), h('span', null, a.owner ? 'Tu suscripción no está al día. Podés ver tus datos, pero no guardar cambios.' : 'La suscripción del responsable de la cuenta no está al día. Podés ver tus datos, pero no guardar cambios.'), h('span', { class: 'sp' }), link('Renovar suscripción')));
   else if (a.state === 'active' && (a.kind === 'trial' || a.kind === 'manual') && days !== null && days <= 5 && a.owner) box.append(h('div', { class: 'gk-banner', role: 'status' }, icon('clock', 16), h('span', null, days <= 0 ? 'Tu período de prueba termina hoy.' : `Tu período de prueba termina en ${plural(days, 'día', 'días')}.`), h('span', { class: 'sp' }), link('Suscribirme')));
 }
 function updateChrome() {
@@ -1784,7 +1784,7 @@ VIEWS.ajustes = function () {
   root.append(section('Accesibilidad', [h('ul', { class: 'tips' }, h('li', null, 'Se puede usar todo con teclado: Tab para moverte, Enter o Espacio para activar, Esc para cerrar ventanas.'), h('li', null, 'El estado de cada cosa se indica con texto e ícono, no solo con color.'), h('li', null, 'Si tu dispositivo pide “reducir movimiento”, la app lo respeta.'), h('li', null, 'Podés agrandar el texto arriba, en “Tamaño del texto”.'))]));
   if (!NOSRV && S.member?.is_owner) root.append(section('Suscripción', [h('p', { class: 'muted' }, 'Podés cancelar cuando quieras. Seguís con acceso hasta el final del período que ya pagaste.'), h('div', { class: 'btnrow' }, h('button', { class: 'btn danger-o', onclick: cancelSubscription }, 'Cancelar suscripción'))]));
   root.append(section('Tus datos', [h('p', { class: 'muted' }, LOCAL ? 'Los datos se guardan solo en este dispositivo. Hacé copias seguido: es la única forma de recuperarlos si se borran los datos del navegador.' : 'Los datos se guardan en el servidor de esta app. Podés llevarte una copia o borrar todo cuando quieras.'),
-    isGuardian() && h('div', { class: 'btnrow wrap' }, h('button', { class: 'btn', onclick: exportData }, icon('download', 16), 'Descargar copia (JSON)'), h('button', { class: 'btn', onclick: importData }, icon('upload', 16), 'Restaurar desde copia')),
+    isGuardian() && h('div', { class: 'btnrow wrap' }, NOSRV && h('button', { class: 'btn', onclick: exportData }, icon('download', 16), 'Descargar copia (JSON)'), h('button', { class: 'btn', onclick: importData }, icon('upload', 16), 'Restaurar desde copia')),
     !DEMO && h('button', { class: 'btn danger-o', onclick: deleteAccount }, icon('trash', 16), LOCAL ? 'Borrar los datos de este dispositivo' : 'Eliminar mi cuenta')]));
   root.append(h('p', { class: 'muted small' }, BRAND.name + (DEMO ? ' · demostración con datos ficticios' : LOCAL ? ' · versión de un archivo' : '')));
   return root;
@@ -1828,7 +1828,6 @@ function changePassword() {
 function exportData() {
   if (LOCAL) { localBackup(); return; }
   if (DEMO) { sheet('Copia de los datos de la demo', () => [h('p', { class: 'muted' }, 'En la demo no se descargan archivos. Este es el contenido que se guardaría:'), h('textarea', { rows: 10, readonly: true, onfocus: (e) => e.target.select() }, JSON.stringify(Backend.exportAll(), null, 1)), h('button', { class: 'btn', onclick: () => copyText(JSON.stringify(Backend.exportAll())) }, icon('copy', 16), 'Copiar')], { wide: true }); return; }
-  location.href = 'api.php?r=export';
 }
 function importData() {
   const inp = h('input', { type: 'file', accept: 'application/json,.json', hidden: true, onchange: async (e) => {
