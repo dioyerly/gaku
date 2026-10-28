@@ -416,15 +416,28 @@ final class Api
         if ($m && (int)$m['owner_id'] === (int)$u['id']) {
             foreach (all('SELECT user_id FROM members WHERE family_id=? AND user_id<>?', [$m['family_id'], $u['id']]) as $o) $cuentas[] = (int)$o['user_id'];
         }
+        $pids = [];
         foreach ($cuentas as $cid) {
-            $subs = all('SELECT preapproval_id FROM subscriptions WHERE user_id=? AND status IN ("authorized","paused","pending") AND preapproval_id NOT LIKE "manual-%"', [$cid]);
-            foreach ($subs as $s) {
-                try {
-                    Billing::cancelPreapproval((string)$s['preapproval_id']);
-                } catch (Throwable $e) {
-                    error_log('borrar cuenta: no se pudo cancelar la suscripción: ' . $e->getMessage());
-                    throw new HttpError(502, 'No pudimos cancelar tu suscripción en Mercado Pago, así que tu cuenta no se borró. Probá de nuevo en unos minutos.', 'mp');
-                }
+            foreach (all('SELECT preapproval_id FROM subscriptions WHERE user_id=? AND status IN ("authorized","paused","pending") AND preapproval_id NOT LIKE "manual-%"', [$cid]) as $s) {
+                $pids[] = (string)$s['preapproval_id'];
+            }
+        }
+        // 1) Revisar todas antes de cancelar ninguna (solo consulta)
+        foreach ($pids as $pid) {
+            try {
+                Billing::syncPreapproval($pid);
+            } catch (Throwable $e) {
+                error_log('borrar cuenta: no se pudo consultar la suscripción: ' . $e->getMessage());
+                throw new HttpError(502, 'No pudimos confirmar tu suscripción en Mercado Pago, así que no se canceló ni se borró nada. Probá de nuevo en unos minutos.', 'mp');
+            }
+        }
+        // 2) Cancelar
+        foreach ($pids as $pid) {
+            try {
+                Billing::cancelPreapproval($pid);
+            } catch (Throwable $e) {
+                error_log('borrar cuenta: no se pudo cancelar la suscripción: ' . $e->getMessage());
+                throw new HttpError(502, 'No pudimos cancelar tu suscripción en Mercado Pago, así que tu cuenta no se borró. Probá de nuevo en unos minutos.', 'mp');
             }
         }
         $pdo = db();
