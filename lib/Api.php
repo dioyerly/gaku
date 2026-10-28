@@ -563,8 +563,12 @@ final class Api
             $st = one('SELECT id FROM students WHERE id=? AND family_id=? AND deleted_at IS NULL', [$id, $m['family_id']]);
             if (!$st) throw new HttpError(404, 'Estudiante no encontrado', 'not_found');
         } else {
-            $n = (int)q('SELECT COUNT(*) FROM students WHERE family_id=? AND deleted_at IS NULL', [$m['family_id']])->fetchColumn();
-            $tope = ($m['mode'] ?? 'self') === 'family' ? 3 : 12;
+            $n = 0;
+            foreach (all('SELECT settings FROM students WHERE family_id=? AND deleted_at IS NULL', [$m['family_id']]) as $row) {
+                $stCount = jdec($row['settings']);
+                if (empty($stCount['archived'])) $n++;
+            }
+            $tope =($m['mode'] ?? 'self') === 'family' ? 3 : 12;
             if ($n >= $tope) throw new HttpError(422, $tope === 3 ? 'En modo familia podés agregar hasta 3 estudiantes.' : 'Llegaste al máximo de estudiantes', 'limit');
         }
         $sid = self::saveStudentRow($m['family_id'], $id, $b);
