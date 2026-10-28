@@ -44,7 +44,7 @@ return [
     // Correo saliente (SMTP). Opcional: sin esto la app funciona igual (los datos se muestran en pantalla).
     'mail' => ['host' => '', 'port' => 587, 'secure' => 'tls', 'user' => '', 'pass' => '', 'from' => '', 'from_name' => 'Gaku'],
 
-    // Los avisos se disparan por CLI: php /ruta/cron.php
+    // Los avisos se disparan por CLI: php /ruta/bin/cron.php
     'cron_token' => '',
     'mail_daily_limit' => 40,
 

@@ -26,6 +26,7 @@ function h(tag, a, ...kids) {
 }
 function add(el, kids) { for (const c of kids.flat(Infinity)) { if (c == null || c === false) continue; el.append(c.nodeType ? c : document.createTextNode(String(c))); } return el; }
 const clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); return el; };
+const isHttp = (u) => /^https?:\/\//i.test(String(u || '').trim());
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uid = () => { const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; const r = crypto.getRandomValues(new Uint8Array(12)); for (const b of r) s += a[b % 36]; return s; };
 const debounce = (fn, ms) => { let t; const f = (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; f.flush = (...a) => { clearTimeout(t); fn(...a); }; f.cancel = () => clearTimeout(t); return f; };
@@ -725,7 +726,9 @@ function openTask(t, defaults = {}) {
   return editSheet(t ? 'Tarea' : 'Nueva tarea', fields, v0, {
     wide: true,
     onSave: async (v) => {
-      const o = { ...v, steps: cleanList(v.steps), links: cleanList(v.links).filter((l) => l.url), title: v.title.trim() };
+      const links0 = cleanList(v.links);
+      const o = { ...v, steps: cleanList(v.steps), links: links0.filter((l) => l.url && isHttp(l.url)), title: v.title.trim() };
+      if (links0.some((l) => l.url && !isHttp(l.url))) toast('Se descartaron enlaces que no empiezan con http:// o https://', 'bad');
       if (v.kind && !needsDelivery(v.kind) && !t) o.deliver = false;
       if (DONE_TASK.includes(o.status) && !o.doneAt) o.doneAt = Date.now();
       const r = await put('task', o);
@@ -744,7 +747,7 @@ function viewTask(t) {
     const sl = h('div', { class: 'stack sm' }); paintSteps();
     add(box, [h('h3', null, t.title), h('div', { class: 'meta' }, subjTag(sub), t.due && pill(`Para ${D.short(taskDueDate(t))}${taskDueTime(t) ? ' ' + fmtTime(taskDueTime(t)) : ''}`, '', 'clock'), t.priority && pill('Prioridad ' + t.priority)),
       t.notes && h('p', null, t.notes), steps.length ? [h('h4', null, 'Pasos'), sl] : null,
-      (t.links || []).length ? [h('h4', null, 'Enlaces'), ...t.links.map((l) => h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.t || l.url))] : null,
+      (t.links || []).filter((l) => isHttp(l.url)).length ? [h('h4', null, 'Enlaces'), ...t.links.filter((l) => isHttp(l.url)).map((l) => h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.t || l.url))] : null,
       (t.files || []).length ? [h('h4', null, 'Archivos'), ...t.files.map((f) => h('a', { href: 'api.php?r=files/' + f.id, target: '_blank', rel: 'noopener' }, f.name))] : null,
       h('div', { class: 'field' }, h('label', { for: 'vt_st' }, 'Tu avance'), h('select', { id: 'vt_st', onchange: (e) => { put('task', { ...t, steps, status: e.target.value }); toast('Estado actualizado'); } }, TASK_ST.map((s) => h('option', { value: s, selected: s === t.status }, cap1(s))))),
       h('div', { class: 'btnrow' }, h('button', { class: 'btn', onclick: () => { close(); openHelp(t); } }, icon('help', 16), 'Pedir ayuda'), h('span', { class: 'sp' }), h('button', { class: 'btn primary', onclick: close }, 'Listo'))]);
@@ -1568,7 +1571,7 @@ function noteEditor(n0) {
   const made = [...R('task'), ...R('event'), ...R('question'), ...R('quiz')].filter((x) => x.fromNote === n.id || x.noteId === n.id);
   const madeBox = made.length ? h('div', { class: 'made' }, h('small', null, 'Creado desde este apunte'), made.map((x) => h('button', { class: 'chip', onclick: () => ({ task: openTask, event: openEvent, question: openQuestion, quiz: () => go('estudio') })[x._type](x) }, icon(x._type === 'task' ? 'check' : x._type === 'event' ? 'bell' : x._type === 'question' ? 'help' : 'copy', 12), x.title || x.text || x.q))) : null;
   const linksBox = h('div', { class: 'nlinks' });
-  const paintLinks = () => { clear(linksBox); (n.links || []).forEach((l) => linksBox.append(h('span', { class: 'chip' }, icon('link', 12), h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.t || l.url), mine && h('button', { class: 'ib xs', 'aria-label': 'Quitar enlace', onclick: () => { n.links = n.links.filter((x) => x !== l); paintLinks(); touch(); } }, icon('x', 12))))); (n.files || []).forEach((f) => linksBox.append(h('span', { class: 'chip' }, icon('clip', 12), h('a', { href: 'api.php?r=files/' + f.id, target: '_blank', rel: 'noopener' }, f.name), mine && h('button', { class: 'ib xs', 'aria-label': 'Quitar archivo', onclick: () => { n.files = n.files.filter((x) => x !== f); paintLinks(); touch(); } }, icon('x', 12))))); };
+  const paintLinks = () => { clear(linksBox); (n.links || []).filter((l) => isHttp(l.url)).forEach((l) => linksBox.append(h('span', { class: 'chip' }, icon('link', 12), h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.t || l.url), mine && h('button', { class: 'ib xs', 'aria-label': 'Quitar enlace', onclick: () => { n.links = n.links.filter((x) => x !== l); paintLinks(); touch(); } }, icon('x', 12))))); (n.files || []).forEach((f) => linksBox.append(h('span', { class: 'chip' }, icon('clip', 12), h('a', { href: 'api.php?r=files/' + f.id, target: '_blank', rel: 'noopener' }, f.name), mine && h('button', { class: 'ib xs', 'aria-label': 'Quitar archivo', onclick: () => { n.files = n.files.filter((x) => x !== f); paintLinks(); touch(); } }, icon('x', 12))))); };
   paintLinks();
   const addLink = () => editSheet('Agregar enlace', [{ k: 't', label: 'Título', placeholder: 'Ej.: Video explicativo' }, { k: 'url', label: 'Dirección', type: 'url', required: true, placeholder: 'https://…' }], { t: '', url: '' }, { onSave: (v) => { if (!/^https?:\/\//i.test(v.url)) { toast('La dirección debe empezar con http:// o https://', 'bad'); return false; } n.links = [...(n.links || []), { t: v.t, url: v.url }]; paintLinks(); touch(); } });
   const attach = NOSRV ? null : (() => { const inp = h('input', { type: 'file', hidden: true, accept: 'image/*,.pdf,.txt,.docx,.xlsx,.pptx', onchange: async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 5 * 1024 * 1024) { toast('El archivo supera los 5 MB', 'bad'); return; } const fd = new FormData(); fd.append('file', f); if (n._sid) fd.append('student_id', n._sid); try { const r = await api('POST', 'files', fd); n.files = [...(n.files || []), { id: r.file.id, name: r.file.name }]; paintLinks(); touch(); } catch (er) { toast(er.message, 'bad'); } } }); return h('span', null, inp, h('button', { type: 'button', class: 'btn sm', onclick: () => inp.click() }, icon('clip', 14), 'Archivo')); })();

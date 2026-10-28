@@ -11,7 +11,7 @@ GAKU — puesta en marcha (Hostinger, PHP 8.3 + MariaDB)
 3) Mercado Pago → Tus integraciones → Webhooks: URL  https://TU-DOMINIO/webhook.php
    Eventos: "Planes y suscripciones" y "Pagos".
 4) Plan de suscripción: back_url = https://TU-DOMINIO/alta.php
-5) Cron (cada 10 min): php /ruta/bin/cron.php  (avisos por correo; opcional)
+5) Cron (cada 5 min): php /ruta/bin/cron.php  (avisos por correo; opcional)
 6) Panel: https://TU-DOMINIO/admin.php
 7) Hacé copia de storage/keys (clave que firma las licencias). Si se pierde, los archivos ya vendidos dejan de validar.
 8) La landing es index.html; el contador de visitas usa track.js/track.php.
