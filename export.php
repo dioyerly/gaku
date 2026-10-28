@@ -37,76 +37,169 @@ if (!hash_equals($tokenHash, $receivedHash)) {
 }
 
 // Validar view
+$views = ['summary', 'events', 'customers', 'pagos', 'sistema'];
 $view = (string)($_GET['view'] ?? '');
-if ($view !== 'summary') {
+if (!in_array($view, $views, true)) {
     http_response_code(404);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'view_not_implemented']);
     exit;
 }
 
-// Procesar summary
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
+$fd = fn($t, string $f) => $t ? date($f, (int)$t) : null;
+$out = static function (array $data): void {
+    http_response_code(200);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+};
+
 try {
-    $result = [];
     $now = time();
 
-    // Cuentas totales
-    $cuentas_total = (int)(one('SELECT COUNT(*) c FROM users')['c'] ?? 0);
-    $result['cuentas_total'] = $cuentas_total;
+    if ($view === 'events') {
+        $out(['events' => []]);
+        exit;
+    }
 
-    // Con acceso activo
+    if ($view === 'customers') {
+        $rows = [];
+        foreach (all('SELECT * FROM users ORDER BY id DESC') as $u) {
+            $a = Billing::accessForUser((int)$u['id']);
+            $sub = $a['sub'] ?? null;
+            if ($a['state'] === 'blocked') $cat = 'bloqueado';
+            elseif ($a['state'] === 'readonly') $cat = 'solo_lectura';
+            elseif ($a['kind'] === 'trial') $cat = 'prueba';
+            elseif ($a['kind'] === 'paid') $cat = 'pago';
+            else $cat = 'manual';
+            $monto = 0;
+            if ($sub) {
+                $p = one('SELECT amount_cent FROM payments WHERE preapproval_id=? AND status="processed" ORDER BY COALESCE(debit_date, updated) DESC LIMIT 1', [$sub['preapproval_id']]);
+                $monto = $p ? (int)$p['amount_cent'] : 0;
+            }
+            $ov = (string)$u['access_override'];
+            $rows[] = [
+                'id' => (int)$u['id'],
+                'nombre' => $u['name'] !== '' ? $u['name'] : $u['email'],
+                'email' => $u['email'],
+                'categoria' => $cat,
+                'estado' => $sub ? (string)$sub['status'] : 'sin_suscripcion',
+                'override' => in_array($ov, ['activo', 'bloqueado'], true) ? $ov : null,
+                'motivo' => $a['reason'] !== '' ? $a['reason'] : null,
+                'alta' => $fd($u['created_at'], 'Y-m-d'),
+                'ultimo_ingreso' => $fd($u['last_login'], 'Y-m-d'),
+                'ultimo_pago' => $fd($a['last_paid'] ?? null, 'Y-m-d H:i:s'),
+                'monto_cent' => $monto,
+                'moneda' => 'ARS',
+                'vence' => $fd($a['until'] ?? null, 'Y-m-d'),
+            ];
+        }
+        $out(['customers' => $rows]);
+        exit;
+    }
+
+    if ($view === 'pagos') {
+        $sin = [];
+        foreach (all('SELECT * FROM subscriptions WHERE user_id IS NULL AND preapproval_id NOT LIKE "manual-%" ORDER BY id DESC LIMIT 50') as $s) {
+            $sin[] = [
+                'email_pago' => $s['payer_email'] !== '' ? $s['payer_email'] : null,
+                'estado' => (string)$s['status'],
+                'creada' => $fd($s['created'], 'Y-m-d H:i:s'),
+                'link_alta' => $s['status'] === 'authorized' ? Billing::appUrl() . '/alta.php?pid=' . rawurlencode((string)$s['preapproval_id']) : null,
+            ];
+        }
+        $cuotas = [];
+        foreach (all('SELECT p.*, u.email FROM payments p LEFT JOIN subscriptions s ON s.preapproval_id=p.preapproval_id LEFT JOIN users u ON u.id=s.user_id ORDER BY p.id DESC LIMIT 50') as $p) {
+            $cuotas[] = [
+                'fecha' => $fd($p['debit_date'] ?: $p['created'], 'Y-m-d H:i:s'),
+                'email' => $p['email'] !== null ? (string)$p['email'] : null,
+                'estado' => (string)$p['status'],
+                'reintento' => (int)$p['retry'],
+                'monto_cent' => (int)$p['amount_cent'],
+                'moneda' => (string)$p['currency'],
+                'detalle' => $p['detail'] !== '' ? (string)$p['detail'] : null,
+            ];
+        }
+        $out(['sin_cuenta' => $sin, 'cuotas' => $cuotas]);
+        exit;
+    }
+
+    if ($view === 'sistema') {
+        $ultMp = one('SELECT MAX(received) m FROM mp_events')['m'] ?? null;
+        $ultLand = one('SELECT MAX(ts) m FROM landing_events')['m'] ?? null;
+        $err24 = (int)(one('SELECT COUNT(*) c FROM mp_events WHERE received>? AND result="error"', [$now - 86400])['c'] ?? 0);
+        $notif = [];
+        foreach (all('SELECT * FROM mp_events ORDER BY id DESC LIMIT 40') as $e) {
+            $notif[] = [
+                'recibido' => $fd($e['received'], 'Y-m-d H:i:s'),
+                'topic' => $e['topic'],
+                'data_id' => $e['data_id'],
+                'firma_ok' => (bool)$e['sig_ok'],
+                'resultado' => $e['result'],
+                'detalle' => $e['detail'],
+            ];
+        }
+        $aud = [];
+        foreach (all('SELECT * FROM audit ORDER BY id DESC LIMIT 40') as $e) {
+            $aud[] = ['ts' => $fd($e['ts'], 'Y-m-d H:i:s'), 'actor' => $e['actor'], 'accion' => $e['action'], 'detalle' => $e['detail']];
+        }
+        $out([
+            'diagnostico' => [
+                'mp_token_cargado' => (string)cfg('mp.access_token') !== '',
+                'webhook_secret_cargado' => (string)cfg('mp.webhook_secret') !== '',
+                'link_suscripcion_ok' => (bool)preg_match('~^https://[^\s]+$~', (string)cfg('mp.plan_url')),
+                'https_ok' => strpos(Billing::appUrl(), 'https://') === 0,
+                'mail_real' => Mailer::configured(),
+            ],
+            'ultima_notificacion_mp' => $fd($ultMp, 'Y-m-d H:i:s'),
+            'notificaciones_error_24h' => $err24,
+            'landing_ultimo_evento' => $fd($ultLand, 'Y-m-d H:i:s'),
+            'notificaciones' => $notif,
+            'auditoria' => $aud,
+        ]);
+        exit;
+    }
+
+    // summary
+    $result = [];
+
+    $result['cuentas_total'] = (int)(one('SELECT COUNT(*) c FROM users')['c'] ?? 0);
+
     $con_acceso = 0;
-    $users = all('SELECT id FROM users');
-    foreach ($users as $u) {
+    foreach (all('SELECT id FROM users') as $u) {
         $access = Billing::accessForUser((int)$u['id']);
         if ($access['state'] === 'active') $con_acceso++;
     }
     $result['con_acceso'] = $con_acceso;
 
-    // Suscripciones pagando (authorized, no período de prueba)
-    $pagando = (int)(one(
+    $result['pagando'] = (int)(one(
         'SELECT COUNT(*) c FROM subscriptions WHERE status = ? AND next_charge <= ?',
         ['authorized', $now]
     )['c'] ?? 0);
-    $result['pagando'] = $pagando;
 
-    // En período de prueba (últimos 30 días de creación, si están authorized)
-    $prueba_limit = $now - 30 * 86400;
-    $en_prueba = (int)(one(
+    $result['en_prueba'] = (int)(one(
         'SELECT COUNT(*) c FROM subscriptions WHERE status = ? AND created > ?',
-        ['authorized', $prueba_limit]
+        ['authorized', $now - 30 * 86400]
     )['c'] ?? 0);
-    $result['en_prueba'] = $en_prueba;
 
-    // Gracia o cortesía (no existe ese concepto claro en schema)
     $result['gracia'] = 0;
 
-    // Solo lectura (suscripciones vencidas, status != authorized)
-    $solo_lectura = (int)(one(
+    $result['solo_lectura'] = (int)(one(
         'SELECT COUNT(*) c FROM subscriptions WHERE status != ? AND status != ?',
         ['authorized', 'pending']
     )['c'] ?? 0);
-    $result['solo_lectura'] = $solo_lectura;
 
-    // Bloqueados (no existe estado de bloqueo explícito en schema)
     $result['bloqueados'] = 0;
 
-    // Suscripciones iniciadas en últimos 30 días
-    $treinta_dias = $now - 30 * 86400;
-    $suscripciones_30d = (int)(one(
+    $result['suscripciones_iniciadas_30d'] = (int)(one(
         'SELECT COUNT(*) c FROM subscriptions WHERE created > ?',
-        [$treinta_dias]
+        [$now - 30 * 86400]
     )['c'] ?? 0);
-    $result['suscripciones_iniciadas_30d'] = $suscripciones_30d;
 
-    // Fecha generada en ISO 8601
     $result['generado'] = date('c');
 
-    http_response_code(200);
-    echo json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    $out($result);
 } catch (Throwable $e) {
     error_log('export.php: ' . $e->getMessage());
     http_response_code(500);
