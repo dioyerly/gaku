@@ -411,6 +411,7 @@ final class Api
         $u = self::user();
         $m = self::$member;
         $b = self::body();
+        if (!rate_hit('delacc:' . $u['id'], 5, 900)) throw new HttpError(429, 'Demasiados intentos. Esperá unos minutos.', 'rate');
         if (!password_verify((string)($b['password'] ?? ''), $u['pass_hash'])) throw new HttpError(403, 'La contraseña no coincide', 'bad_login');
         $cuentas = [(int)$u['id']];
         if ($m && (int)$m['owner_id'] === (int)$u['id']) {
@@ -443,11 +444,12 @@ final class Api
             }
         }
         $pdo = db();
+        $archivos = [];
         $pdo->beginTransaction();
         try {
             if ($m && (int)$m['owner_id'] === (int)$u['id']) {
                 $fid = $m['family_id'];
-                foreach (all('SELECT path FROM files WHERE family_id=?', [$fid]) as $f) @unlink(STORAGE . '/uploads/' . $f['path']);
+                foreach (all('SELECT path FROM files WHERE family_id=?', [$fid]) as $f) $archivos[] = $f['path'];
                 q('DELETE FROM reminders WHERE family_id=?', [$fid]);
                 foreach (all('SELECT user_id FROM members WHERE family_id=? AND user_id<>?', [$fid, $u['id']]) as $o) {
                     q('DELETE FROM reminders WHERE user_id=?', [$o['user_id']]);
@@ -464,6 +466,7 @@ final class Api
             q('UPDATE subscriptions SET user_id=NULL WHERE user_id=?', [$u['id']]);
             q('DELETE FROM users WHERE id=?', [$u['id']]);
             $pdo->commit();
+            foreach ($archivos as $p) @unlink(STORAGE . '/uploads/' . $p);
         } catch (Throwable $e) {
             $pdo->rollBack();
             throw $e;
