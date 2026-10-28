@@ -2,8 +2,9 @@
 declare(strict_types=1);
 require_once __DIR__ . '/lib/web.php';
 
-// Solo GET permitido
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+// Solo GET (lectura) y POST (acciones del Centro)
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if ($method !== 'GET' && $method !== 'POST') {
     http_response_code(405);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'method_not_allowed']);
@@ -36,8 +37,109 @@ if (!hash_equals($tokenHash, $receivedHash)) {
     exit;
 }
 
+if ($method === 'POST') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    $reply = static function (int $code, array $data): void {
+        http_response_code($code);
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
+    };
+    if (stripos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') !== 0) $reply(415, ['error' => 'json_required']);
+    $raw = (string)file_get_contents('php://input', false, null, 0, 4097);
+    if (strlen($raw) > 4096) $reply(413, ['error' => 'request_too_large']);
+    $in = json_decode($raw, true);
+    if (!is_array($in)) $reply(400, ['error' => 'invalid_request']);
+
+    $accion = $in['accion'] ?? null;
+    if (!is_string($accion)) $reply(400, ['error' => 'invalid_request']);
+    if (!in_array($accion, ['crear_gracia', 'dar_gracia', 'quitar_gracia', 'set_acceso', 'link_clave'], true)) $reply(404, ['error' => 'action_not_implemented']);
+
+    $bad = static function (string $m): never { throw new InvalidArgumentException($m); };
+    $int = static function ($v, int $min, int $max, string $campo) use ($bad): int {
+        if (!is_int($v) || $v < $min || $v > $max) $bad("El campo $campo no es válido.");
+        return $v;
+    };
+    $txt = static function ($v, int $min, int $max, string $campo) use ($bad): string {
+        if (!is_string($v)) $bad("El campo $campo no es válido.");
+        $v = trim($v);
+        if (mb_strlen($v) < $min || mb_strlen($v) > $max) $bad("El campo $campo no es válido.");
+        return $v;
+    };
+
+    $pdo = null;
+    try {
+        $pdo = db();
+        if ($accion === 'crear_gracia') {
+            $nom = $txt($in['nombre'] ?? null, 1, 120, 'nombre');
+            $em = strtolower($txt($in['email'] ?? null, 1, 190, 'email'));
+            $dias = array_key_exists('dias', $in) ? $int($in['dias'], 1, 3650, 'dias') : 7;
+            $mot = array_key_exists('motivo', $in) && $in['motivo'] !== null ? $txt($in['motivo'], 0, 80, 'motivo') : '';
+            $mot = $mot ?: 'Cuenta de gracia';
+            $cl = array_key_exists('clave', $in) && $in['clave'] !== null ? $txt($in['clave'], 0, 200, 'clave') : '';
+            $gen = false;
+            if ($cl === '') { $cl = substr(strtr(base64_encode(random_bytes(12)), '+/=', 'xyz'), 0, 12) . '7'; $gen = true; }
+            if (!filter_var($em, FILTER_VALIDATE_EMAIL)) $bad('El email no es válido.');
+            if (mb_strlen($nom) > 80) $bad('El nombre admite hasta 80 caracteres.');
+            if (!$gen && mb_strlen($cl) < 8) $bad('La clave debe tener al menos 8 caracteres.');
+            if (one('SELECT id FROM users WHERE email=?', [$em])) throw new RuntimeException('Ese email ya tiene una cuenta.');
+            $pdo->beginTransaction(); $now = time(); $vence = $now + $dias * 86400;
+            q('INSERT INTO users(email,pass_hash,name,email_verified,settings,created_at) VALUES(?,?,?,1,?,?)', [$em, password_hash($cl, PASSWORD_DEFAULT), $nom, '{}', $now]);
+            $nid = (int)$pdo->lastInsertId();
+            q('INSERT INTO subscriptions(preapproval_id,user_id,payer_email,status,reason,amount_cent,currency,period_days,next_charge,created,updated) VALUES(?,?,?,"authorized",?,0,"ARS",?,?,?,?)', ['manual-' . $nid . '-' . bin2hex(random_bytes(4)), $nid, $em, $mot, $dias, $vence, $now, $now]);
+            $pdo->commit();
+            Billing::audit('centro', 'centro_crear_gracia', "$em · $dias días · $mot");
+            $reply(200, $gen ? ['ok' => true, 'clave_generada' => $cl] : ['ok' => true]);
+        } elseif ($accion === 'dar_gracia') {
+            $cid = $int($in['cuenta'] ?? null, 1, PHP_INT_MAX, 'cuenta');
+            $dias = $int($in['dias'] ?? null, 1, 3650, 'dias');
+            $c = one('SELECT * FROM users WHERE id=?', [$cid]); if (!$c) $bad('No existe esa cuenta.');
+            if ((int)one('SELECT COUNT(*) c FROM subscriptions WHERE user_id=? AND preapproval_id NOT LIKE "manual-%" AND status="authorized"', [$cid])['c'] > 0) throw new RuntimeException('Esa cuenta ya tiene una suscripción activa en Mercado Pago.');
+            $man = one('SELECT * FROM subscriptions WHERE user_id=? AND preapproval_id LIKE "manual-%" ORDER BY id DESC LIMIT 1', [$cid]); $now = time();
+            if ($man) { $vence = max($now, (int)$man['next_charge']) + $dias * 86400; q('UPDATE subscriptions SET status="authorized", next_charge=?, period_days=?, updated=? WHERE id=?', [$vence, $dias, $now, $man['id']]); }
+            else { $vence = $now + $dias * 86400; q('INSERT INTO subscriptions(preapproval_id,user_id,payer_email,status,reason,amount_cent,currency,period_days,next_charge,created,updated) VALUES(?,?,?,"authorized","Cuenta de gracia",0,"ARS",?,?,?,?)', ['manual-' . $cid . '-' . bin2hex(random_bytes(4)), $cid, $c['email'], $dias, $vence, $now, $now]); }
+            Billing::audit('centro', 'centro_dar_gracia', $c['email'] . " · +$dias días");
+            $reply(200, ['ok' => true, 'vence' => date('Y-m-d H:i:s', $vence)]);
+        } elseif ($accion === 'quitar_gracia') {
+            $cid = $int($in['cuenta'] ?? null, 1, PHP_INT_MAX, 'cuenta');
+            q('UPDATE subscriptions SET status="cancelled", next_charge=?, updated=? WHERE user_id=? AND preapproval_id LIKE "manual-%"', [time() - 1, time(), $cid]);
+            Billing::audit('centro', 'centro_quitar_gracia', "cuenta $cid");
+            $reply(200, ['ok' => true]);
+        } elseif ($accion === 'set_acceso') {
+            $cid = $int($in['cuenta'] ?? null, 1, PHP_INT_MAX, 'cuenta');
+            $valor = $in['valor'] ?? null;
+            if (!is_string($valor) || !in_array($valor, ['auto', 'activo', 'bloqueado'], true)) $bad('El campo valor no es válido.');
+            q('UPDATE users SET access_override=? WHERE id=?', [$valor, $cid]);
+            Billing::audit('centro', 'centro_override', "cuenta $cid => $valor");
+            $reply(200, ['ok' => true]);
+        } else { // link_clave
+            $cid = $int($in['cuenta'] ?? null, 1, PHP_INT_MAX, 'cuenta');
+            $u = one('SELECT email FROM users WHERE id=?', [$cid]); if (!$u) $bad('No existe esa cuenta.');
+            $tok = bin2hex(random_bytes(20));
+            q('UPDATE users SET reset_token=?, reset_expires=? WHERE id=?', [hash('sha256', $tok), time() + 3600, $cid]);
+            Billing::audit('centro', 'centro_link_clave', "cuenta $cid");
+            $reply(200, ['ok' => true, 'link' => Billing::appUrl() . '/app.php#/restablecer/' . $tok]);
+        }
+    } catch (InvalidArgumentException $e) {
+        if ($pdo && $pdo->inTransaction()) $pdo->rollBack();
+        $reply(400, ['error' => 'invalid_request', 'detalle' => $e->getMessage()]);
+    } catch (PDOException $e) {
+        if ($pdo && $pdo->inTransaction()) $pdo->rollBack();
+        error_log('export.php: ' . $e->getMessage());
+        $reply(500, ['error' => 'internal']);
+    } catch (RuntimeException $e) {
+        if ($pdo && $pdo->inTransaction()) $pdo->rollBack();
+        $reply(409, ['error' => 'conflict', 'detalle' => $e->getMessage()]);
+    } catch (Throwable $e) {
+        if ($pdo && $pdo->inTransaction()) $pdo->rollBack();
+        error_log('export.php: ' . $e->getMessage());
+        $reply(500, ['error' => 'internal']);
+    }
+    exit;
+}
+
 // Validar view
-$views = ['summary', 'events', 'customers', 'pagos', 'sistema'];
+$views =['summary', 'events', 'customers', 'pagos', 'sistema'];
 $view = (string)($_GET['view'] ?? '');
 if (!in_array($view, $views, true)) {
     http_response_code(404);
