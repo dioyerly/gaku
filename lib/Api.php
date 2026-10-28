@@ -412,8 +412,12 @@ final class Api
         $m = self::$member;
         $b = self::body();
         if (!password_verify((string)($b['password'] ?? ''), $u['pass_hash'])) throw new HttpError(403, 'La contraseña no coincide', 'bad_login');
+        $cuentas = [(int)$u['id']];
         if ($m && (int)$m['owner_id'] === (int)$u['id']) {
-            $subs = all('SELECT preapproval_id FROM subscriptions WHERE user_id=? AND status IN ("authorized","paused","pending") AND preapproval_id NOT LIKE "manual-%"', [$u['id']]);
+            foreach (all('SELECT user_id FROM members WHERE family_id=? AND user_id<>?', [$m['family_id'], $u['id']]) as $o) $cuentas[] = (int)$o['user_id'];
+        }
+        foreach ($cuentas as $cid) {
+            $subs = all('SELECT preapproval_id FROM subscriptions WHERE user_id=? AND status IN ("authorized","paused","pending") AND preapproval_id NOT LIKE "manual-%"', [$cid]);
             foreach ($subs as $s) {
                 try {
                     Billing::cancelPreapproval((string)$s['preapproval_id']);
@@ -434,6 +438,7 @@ final class Api
                     q('DELETE FROM reminders WHERE user_id=?', [$o['user_id']]);
                 }
                 foreach (all('SELECT user_id FROM members WHERE family_id=? AND user_id<>?', [$fid, $u['id']]) as $o) {
+                    q('UPDATE subscriptions SET user_id=NULL WHERE user_id=?', [$o['user_id']]);
                     q('DELETE FROM digests WHERE user_id=?', [$o['user_id']]);
                     q('DELETE FROM users WHERE id=?', [$o['user_id']]);
                 }

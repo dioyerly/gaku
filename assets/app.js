@@ -1844,7 +1844,7 @@ function importData() {
   document.body.append(inp); inp.click(); setTimeout(() => inp.remove(), 60000);
 }
 function deleteAccount() {
-  editSheet('Eliminar mi cuenta', [{ k: 'password', label: 'Tu contraseña', type: 'password', required: true }, { k: 'sure', type: 'checkbox', label: '', text: 'Entiendo que se borran mis datos' + (S.member?.is_owner ? ', los de toda la familia y los archivos' : '') + ' y no se pueden recuperar' }], { password: '', sure: false }, {
+  editSheet('Eliminar mi cuenta', [{ k: 'password', label: 'Tu contraseña', type: 'password', required: true }, { k: 'sure', type: 'checkbox', label: '', text: 'Entiendo que se borran mis datos' + (S.member?.is_owner ? ', las cuentas de todos los miembros de la familia (correo y clave), sus datos y los archivos, y se cancela la suscripción' : '') + ' y no se pueden recuperar' }], { password: '', sure: false }, {
     saveLabel: 'Eliminar para siempre', onSave: async (v) => { if (!v.sure) { toast('Marcá la casilla para confirmar', 'bad'); return false; } try { await api('POST', 'auth/delete', { password: v.password }); stopPolling(); S.me = S.member = S.family = null; S.recs = new Map(); S.since = 0; bump(); go('entrar'); toast('Cuenta eliminada'); } catch (e) { toast(e.message, 'bad'); return false; } },
   });
 }
