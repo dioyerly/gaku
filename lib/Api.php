@@ -555,21 +555,35 @@ final class Api
         return $id;
     }
 
+    private static function activeStudentCount(string $familyId, ?string $excluirId = null): int
+    {
+        $n = 0;
+        foreach (all('SELECT id, settings FROM students WHERE family_id=? AND deleted_at IS NULL', [$familyId]) as $row) {
+            if ($excluirId !== null && $row['id'] === $excluirId) continue;
+            $st = jdec($row['settings']);
+            if (empty($st['archived'])) $n++;
+        }
+        return $n;
+    }
+
+    private static function studentCap(array $m): int
+    {
+        return ($m['mode'] ?? 'self') === 'family' ? 3 : 12;
+    }
+
     private static function studentSave(?string $id): array
     {
         $m = self::guardian();
         $b = self::body();
+        $cap = self::studentCap($m);
+        $capMsg = $cap === 3 ? 'En modo familia podés agregar hasta 3 estudiantes.' : 'Llegaste al máximo de estudiantes';
         if ($id !== null) {
-            $st = one('SELECT id FROM students WHERE id=? AND family_id=? AND deleted_at IS NULL', [$id, $m['family_id']]);
+            $st = one('SELECT id, settings FROM students WHERE id=? AND family_id=? AND deleted_at IS NULL', [$id, $m['family_id']]);
             if (!$st) throw new HttpError(404, 'Estudiante no encontrado', 'not_found');
-        } else {
-            $n = 0;
-            foreach (all('SELECT settings FROM students WHERE family_id=? AND deleted_at IS NULL', [$m['family_id']]) as $row) {
-                $stCount = jdec($row['settings']);
-                if (empty($stCount['archived'])) $n++;
-            }
-            $tope = ($m['mode'] ?? 'self') === 'family' ? 3 : 12;
-            if ($n >= $tope) throw new HttpError(422, $tope === 3 ? 'En modo familia podés agregar hasta 3 estudiantes.' : 'Llegaste al máximo de estudiantes', 'limit');
+            $reactiva = isset($b['archived']) && !(bool)$b['archived'] && !empty(jdec($st['settings'])['archived']);
+            if ($reactiva && self::activeStudentCount($m['family_id']) >= $cap) throw new HttpError(422, $capMsg, 'limit');
+        } elseif (self::activeStudentCount($m['family_id']) >= $cap) {
+            throw new HttpError(422, $capMsg, 'limit');
         }
         $sid = self::saveStudentRow($m['family_id'], $id, $b);
         if (isset($b['archived'])) {
