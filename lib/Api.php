@@ -79,7 +79,15 @@ final class Api
     public static function accessOut(?array $a): ?array
     {
         if (!$a) return null;
-        return ['state' => $a['state'], 'kind' => $a['kind'], 'reason' => $a['reason'], 'until' => $a['until'], 'owner' => $a['owner'] ?? true, 'plan_url' => (string)cfg('mp.plan_url')];
+        return ['state' => $a['state'], 'kind' => $a['kind'], 'reason' => $a['reason'], 'until' => $a['until'], 'owner' => $a['owner'] ?? true, 'plan_url' => self::planUrl($a)];
+    }
+
+    private static function planUrl(?array $a): string
+    {
+        $sin = (string)cfg('mp.plan_url_sin_prueba');
+        $real = !empty($a['sub']) && strpos((string)($a['sub']['preapproval_id'] ?? ''), 'manual-') !== 0;
+        if ($real && preg_match('~^https://[^\s]+$~', $sin)) return $sin;
+        return (string)cfg('mp.plan_url');
     }
 
     private static function session(): void
