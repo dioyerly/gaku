@@ -564,7 +564,8 @@ final class Api
             if (!$st) throw new HttpError(404, 'Estudiante no encontrado', 'not_found');
         } else {
             $n = (int)q('SELECT COUNT(*) FROM students WHERE family_id=? AND deleted_at IS NULL', [$m['family_id']])->fetchColumn();
-            if ($n >= 12) throw new HttpError(422, 'Llegaste al máximo de estudiantes', 'limit');
+            $tope = ($m['mode'] ?? 'self') === 'family' ? 3 : 12;
+            if ($n >= $tope) throw new HttpError(422, $tope === 3 ? 'En modo familia podés agregar hasta 3 estudiantes.' : 'Llegaste al máximo de estudiantes', 'limit');
         }
         $sid = self::saveStudentRow($m['family_id'], $id, $b);
         if (isset($b['archived'])) {
@@ -770,6 +771,7 @@ final class Api
         $u = self::user();
         $m = self::guardian();
         if ((int)$m['owner_id'] !== (int)$u['id']) throw new HttpError(403, 'Solo quien creó la familia puede invitar.', 'forbidden');
+        if (($m['mode'] ?? 'self') !== 'family') throw new HttpError(403, 'Las invitaciones son solo para el modo familia.', 'forbidden');
         $b = self::body();
         $role = ($b['role'] ?? '') === 'student' ? 'student' : 'guardian';
         $sid = null;
