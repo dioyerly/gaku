@@ -568,7 +568,7 @@ final class Api
                 $stCount = jdec($row['settings']);
                 if (empty($stCount['archived'])) $n++;
             }
-            $tope =($m['mode'] ?? 'self') === 'family' ? 3 : 12;
+            $tope = ($m['mode'] ?? 'self') === 'family' ? 3 : 12;
             if ($n >= $tope) throw new HttpError(422, $tope === 3 ? 'En modo familia podés agregar hasta 3 estudiantes.' : 'Llegaste al máximo de estudiantes', 'limit');
         }
         $sid = self::saveStudentRow($m['family_id'], $id, $b);
