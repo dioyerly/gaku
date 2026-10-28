@@ -1739,7 +1739,7 @@ VIEWS.familia = function () {
   root.append(section('Modo', h('div', { class: 'chips' }, [['self', 'Para mí'], ['family', 'Para mi familia']].map(([k, l]) => h('button', { class: 'chip' + (f.mode === k ? ' on' : ''), 'aria-pressed': f.mode === k, onclick: async () => { const j = await api('PUT', 'family', { mode: k }); S.family = j.family; bump(); } }, l)))));
   return root;
 };
-const inviteUrl = (code) => (location.href.split('#')[0].replace(/[^/]*$/, '') || location.origin + '/') + '#/unirse/' + code;
+const inviteUrl = (code) => location.href.split('#')[0] + '#/unirse/' + code;
 async function makeInvite(role) {
   let sid = '';
   const students = liveStudents().filter((s) => !S.members.find((m) => m.student_id === s.id));
