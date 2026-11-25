@@ -11,6 +11,25 @@ if ($method !== 'GET' && $method !== 'POST') {
     exit;
 }
 
+// Conexión por código: el Centro manda el código de 8 dígitos (un solo uso, 10 min) y una clave nueva.
+if ($method === 'POST' && stripos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json') === 0) {
+    $inP = json_decode((string)file_get_contents('php://input', false, null, 0, 1025), true);
+    if (is_array($inP) && ($inP['accion'] ?? null) === 'emparejar') {
+        header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
+        if (!rate_hit('emparejar:' . client_ip(), 5, 900)) { http_response_code(429); echo json_encode(['error' => 'rate']); exit; }
+        $cod = preg_replace('/\D+/', '', (string)($inP['codigo'] ?? '')); $clave = (string)($inP['clave'] ?? '');
+        $row = one('SELECT v FROM meta WHERE k=?', ['centro_codigo']); $v = $row ? (string)$row['v'] : '';
+        $parts = explode('|', $v, 2);
+        $ok = count($parts) === 2 && (int)$parts[1] >= time() && hash_equals($parts[0], hash('sha256', $cod))
+            && strlen($clave) >= 32 && strlen($clave) <= 200 && preg_match('/^[A-Za-z0-9_-]+$/', $clave);
+        if (!$ok) { http_response_code(401); echo json_encode(['error' => 'codigo_incorrecto']); exit; }
+        q('REPLACE INTO meta(k,v) VALUES(?,?)', ['centro_token_hash', hash('sha256', $clave)]);
+        q('REPLACE INTO meta(k,v) VALUES(?,?)', ['centro_codigo', '']);
+        Billing::audit('centro', 'centro_emparejado', 'conexión por código');
+        echo json_encode(['ok' => true]); exit;
+    }
+}
+
 // Validar token: el propio de Gaku (hash en base de datos) o la clave compartida del Centro (ecosystem_key en config.php)
 $tokenHashRow = one('SELECT v FROM meta WHERE k=?', ['centro_token_hash']);
 $tokenHash = $tokenHashRow ? (string)$tokenHashRow['v'] : '';

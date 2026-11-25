@@ -120,6 +120,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
       q('UPDATE devices SET active=0 WHERE id=? AND license_id=?', [(int)($_POST['disp'] ?? 0), $lid]); Billing::audit($adminEmail, 'admin_lic_liberar', "lic $lid"); flash('o', 'Dispositivo liberado.');
     } elseif ($a === 'lic_reenviar' && $lid > 0) {
       $ok = Billing::mailLicense($lid); flash($ok ? 'o' : 'e', $ok ? 'Licencia reenviada por mail.' : 'No se pudo enviar (¿falta el correo configurado o la licencia no tiene email?).');
+    } elseif ($a === 'centro_codigo') {
+      $cod = (string)random_int(10000000, 99999999);
+      q('REPLACE INTO meta(k,v) VALUES(?,?)', ['centro_codigo', hash('sha256', $cod) . '|' . (time() + 600)]);
+      Billing::audit($adminEmail, 'admin_codigo_centro', '');
+      flash('o', '<b>Código de conexión:</b> <code style="font-size:26px;letter-spacing:4px">' . gk_esc(substr($cod, 0, 4) . ' ' . substr($cod, 4)) . '</code><br>Escribilo en tu Centro de operaciones (panel.estrategia.site) → Inicio → <b>Conectar</b>. Sirve una sola vez y vence en 10 minutos.');
     } elseif ($a === 'centro_token') {
       $tok = bin2hex(random_bytes(32));
       q('REPLACE INTO meta(k,v) VALUES(?,?)', ['centro_token_hash', hash('sha256', $tok)]);
@@ -335,7 +340,7 @@ details.card>summary{cursor:pointer;font-weight:700;list-style:none}details.card
 
 <?php else: $ult = one('SELECT MAX(received) m FROM mp_events')['m'] ?? null; $okc = fn(bool $b, string $si, string $no) => '<span class="pill ' . ($b ? 'ok' : 'bad') . '">' . gk_esc($b ? $si : $no) . '</span>';
   $kf = STORAGE . '/keys/gaku-ec.pem'; ?>
-  <div class="card"><h3>Conectar al Centro de operaciones</h3><form method="post" action="admin.php" class="in"><?= csrf_in('centro_token', 'sistema') ?><button class="p">Generar token para Centro</button></form></div>
+  <div class="card"><h3>Conectar al Centro de operaciones</h3><form method="post" action="admin.php" class="in"><?= csrf_in('centro_codigo', 'sistema') ?><button class="p">Generar código de conexión</button></form><p class="mut" style="margin:10px 0 4px">Opción manual (token largo):</p><form method="post" action="admin.php" class="in"><?= csrf_in('centro_token', 'sistema') ?><button class="p">Generar token para Centro</button></form></div>
   <div class="card"><h3>Diagnóstico</h3><table style="min-width:0">
     <tr><td>Credencial de Mercado Pago (access token)</td><td><?= $okc((string)cfg('mp.access_token') !== '', 'cargada', 'falta') ?></td></tr>
     <tr><td>Clave secreta del webhook</td><td><?= $okc((string)cfg('mp.webhook_secret') !== '', 'cargada', 'falta') ?></td></tr>
