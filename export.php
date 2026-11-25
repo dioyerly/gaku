@@ -11,26 +11,28 @@ if ($method !== 'GET' && $method !== 'POST') {
     exit;
 }
 
-// Validar token (leer hash desde base de datos)
+// Validar token: el propio de Gaku (hash en base de datos) o la clave compartida del Centro (ecosystem_key en config.php)
 $tokenHashRow = one('SELECT v FROM meta WHERE k=?', ['centro_token_hash']);
 $tokenHash = $tokenHashRow ? (string)$tokenHashRow['v'] : '';
+$ecoKey = (string)cfg('ecosystem_key', '');
+$ecoOk = strlen($ecoKey) >= 32;
 
-if ($tokenHash === '') {
+if ($tokenHash === '' && !$ecoOk) {
     http_response_code(503);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'not_configured']);
     exit;
 }
 
-$auth = (string)($_SERVER['HTTP_AUTHORIZATION'] ?? '');
+$auth = (string)($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
 $bearerToken = '';
 if (preg_match('/^Bearer\s+(\S+)$/', $auth, $m)) {
     $bearerToken = $m[1];
 }
 
-// Hashear el token que viene y comparar
 $receivedHash = hash('sha256', $bearerToken);
-if (!hash_equals($tokenHash, $receivedHash)) {
+$tokOk = ($tokenHash !== '' && hash_equals($tokenHash, $receivedHash)) || ($ecoOk && $bearerToken !== '' && hash_equals($ecoKey, $bearerToken));
+if (!$tokOk) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['error' => 'unauthorized']);

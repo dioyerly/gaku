@@ -6,6 +6,9 @@
 return [
     'brand' => ['name' => 'Gaku', 'short' => 'Gaku'],
 
+    // Clave compartida con el Centro de operaciones (32+ caracteres, la misma en todas las apps). Opcional.
+    'ecosystem_key' => '',
+
     // URL pública del sitio, sin barra final. Ej.: 'https://gaku.estrategia.site'
     'app_url' => '',
     'default_tz' => 'America/Argentina/Buenos_Aires',
